@@ -1,0 +1,46 @@
+== Getting a Development Environment Running on Debian/Ubuntu
+
+Resources:
+  (QEMU, Compiler, Linux): http://raspi.springnote.com/pages/8234984
+  (LambdaPi): https://gitorious.org/lambdapi
+
+=== Setup Development Directory ===
+
+  DEV_DIR=$HOME/raspberry-pi
+  export PATH=$DEV_DIR/bin:$DEV_DIR/arm-2011.03/bin:$PATH
+
+=== Installing Compiler ===
+
+  mkdir -p $DEV_DIR
+  cd $DEV_DIR
+  mkdir -p $DEV_DIR/modules
+  wget 'https://sourcery.mentor.com/sgpp/lite/arm/portal/package8734/public/arm-  none-eabi/arm-2011.03-42-arm-none-eabi-i686-pc-linux-gnu.tar.bz2'
+  tar -xvf arm-*-arm-none-eabi-i686-pc-linux-gnu.tar.bz2
+
+=== Install QEMU ===
+
+  export PATH=$DEV_DIR/bin:$DEV_DIR/arm-2011.03/bin:$PATH
+  cd $DEV_DIR
+  sudo apt-get install -y git-core zlib1g-dev libsdl1.2-dev
+  git clone git clone https://github.com/qemu/QEMU.git qemu
+  cd $DEV_DIR/qemu
+  ./configure --target-list="arm-softmmu" --prefix=$DEV_DIR --enable-sdl
+  make -j 4
+  fakeroot make install
+
+=== Checkout and Build LambdaPi ===
+
+  cd $DEV_DIR/
+  git clone git://gitorious.org/lambdapi/lambdapi.git LambdaPi
+  cd LambdaPi
+  sed -i -e 's|/usr/local/lib/gcc/$(ARCH)/$(GCCVERSION)/|'"$DEV_DIR/arm-2011.03/lib/gcc/arm-none-eabi/4.5.2/"'|'
+  make
+
+=== Run Lambda Pi ===
+
+  qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel ./bin/kernel.elf -nographic
+
+How to actually do something with LambdaPi I haven't worked out yet.
+
+
+  
