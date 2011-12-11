@@ -12,20 +12,20 @@ class Builder
   def initialize
     @arch      = "arm-none-eabi"
     @platform  = "qemu"
-    @qemu_dir  = "/home/richcole/raspberry-pi/raspidev/bin"
-    @tool_dir  = "/home/richcole/raspberry-pi/raspidev/arm-2011.03/bin"
-    @tool_lib  = "/home/richcole/raspberry-pi/raspidev/arm-2011.03/lib/gcc/arm-none-eabi/4.5.2/libgcc.a"
+    @qemu_dir  = "/home/richcole/raspberry-pi/bin"
+    @tool_dir  = "/home/richcole/raspberry-pi/arm-2011.03/bin"
+    @tool_lib  = "/home/richcole/raspberry-pi/arm-2011.03/lib/gcc/arm-none-eabi/4.5.2/libgcc.a"
     @proj_dir  = FileUtils.pwd
-    @build_dir = proj_dir  + "/build"
+    @build_dir = proj_dir  + "/build" 
     @src_dir   = proj_dir  + "/src"
     @obj_dir   = build_dir + "/obj"
-    @as        = @tool_dir + "/" + arch + "-as"
+    @as        = @tool_dir + "/" + arch + "-as" 
     @cc        = @tool_dir + "/" + arch + "-gcc"
     @ld        = @tool_dir + "/" + arch + "-ld"
     @objcopy   = @tool_dir + "/" + arch + "-objcopy"
     @cpu       = "arm1176jzf-s"
-    @src_dirs  = [src_dir, src_dir + "/" + platform, src_dir + "/lib", src_dir + "/lambda"]
-    @includes  = @src_dirs.map { |x| "-I#{x}" }.join(" ")
+    @src_dirs  = [ platform, "lib", "core", "lambda" ].map { |x| src_dir + "/" + x }
+    @includes  = "-I#{src_dir} " + @src_dirs.map { |x| "-I#{x}" }.join(" ")
     @flags     = "#{includes} -g -mcpu=#{cpu}"
     @c_flags   = "#{flags} -DPLATFORM=#{platform}"
     @as_flags  = "#{flags}"
@@ -55,7 +55,6 @@ class Builder
       ld_flags = "-nostdlib -static --error-unresolved-symbols"
       run "#{ld} #{ld_flags} -T #{ld_file} #{obj_files.join(" ")} " + 
         "-o #{kernel_elf_image} #{tool_lib}"
-      run "#{objcopy} -O binary #{kernel_elf_image} #{kernel_image}"
     end
     kernel_elf_image
   end
@@ -88,7 +87,7 @@ class Builder
     kernel_file = build_dir + "/kernel"
     kernel_elf_image = build_kernel_elf_image("#{src_dir}/kernel.ld", obj_files, kernel_file)
     kernel_image = build_kernel_image(kernel_file, kernel_elf_image)
-    task :default => kernel_elf_image
+    task :default => [ kernel_elf_image, kernel_image ] 
     task :run => run_kernel(kernel_elf_image)
   end
 
