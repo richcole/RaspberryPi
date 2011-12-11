@@ -89,7 +89,9 @@ character as soon as the UART buffer becomes free.
 There an memory management system somewhere on this system. It must
 affect access to devices and such.
 
+Here is a link to a set of slides about ARM
 
+  http://simplemachines.it/doc/arm_inst.pdf
 
 
   
