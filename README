@@ -3,6 +3,7 @@
 Resources:
   (QEMU, Compiler, Linux): http://raspi.springnote.com/pages/8234984
   (LambdaPi): https://gitorious.org/lambdapi
+  (eLinux Wiki): http://elinux.org/RaspberryPiBoard
 
 === Setup Development Directory ===
 
@@ -41,6 +42,54 @@ Resources:
   qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel ./bin/kernel.elf -nographic
 
 How to actually do something with LambdaPi I haven't worked out yet.
+
+=== Source in this Package ===
+
+The source in this package is a copy of LambdaPi. I translated the
+Makefile into a Rakefile. The purpose is to try to understand what is in LambdaPi
+and have some code I can prod and poke at.
+
+=== Notes ===
+
+Execution being at the top of the vector table, vector_table.s. This
+loads the reset function pointer into the program count (a way to jump
+I guess) and proceeds to reset.s.
+
+Reset.s essentially sets up a number of stacks. The jumps into the c
+entry point.
+
+I guess that B . is a no-op operation. B means branch.
+
+pl011.c provides code to access the UART. 
+
+  http://infocenter.arm.com/help/topic/com.arm.doc.ddi0183f/DDI0183.pdf
+
+DMB tells the compiler not to re-order reads. It is used while reading from
+the serial port.
+
+  http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0489c/CIHGHHIE.html
+
+Here is a list of the ARM instruction set. 
+
+  http://infocenter.arm.com/help/topic/com.arm.doc.qrc0001m/QRC0001_UAL.pdf
+
+The function pl011_putc busy waits. That could be useful as a
+debugging technique but I guess is bad form for an operating system.
+
+The location of the UART registers is hard coded in platorm.h. It is different on the
+Raspberry PI than on the qemu version.
+
+The pl011 responds has an interupt which is configured when the device
+is initialized.
+
+The ARM and particularly the pl011 seem to have DMA's. It would seem that maybe
+by configuring a DMA the CPU could be freed from having to do the puts for each
+character as soon as the UART buffer becomes free.
+
+There an memory management system somewhere on this system. It must
+affect access to devices and such.
+
+
 
 
   
