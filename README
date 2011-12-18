@@ -1,50 +1,54 @@
-== Getting a Development Environment Running on Debian/Ubuntu
+== Raspberry Pi Experimental OS
 
-Resources:
+This project is about learning about operating systems by writing one
+for the RaspberryPi.
+
+So far I'm working with QEMU and emulating the RaspberryPi because
+the RasberryPi hasn't been released.
+
+A development log is contained in the files NOTES in the root
+directory.
+
+== Resources
+
+Here is a list some sites containing useful information
+
   (Raspberry Pi): http://www.raspberrypi.org/
   (QEMU, Compiler, Linux): http://raspi.springnote.com/pages/8234984
   (LambdaPi): https://gitorious.org/lambdapi
   (eLinux Wiki): http://elinux.org/RaspberryPiBoard
 
-=== Setup Development Directory
+== Setting up a development environment
 
-  DEV_DIR=$HOME/raspberry-pi
-  export PATH=$DEV_DIR/bin:$DEV_DIR/arm-2011.03/bin:$PATH
+This sets up a development environment under Debian. I run Debian
+inside Virtualbox on my windows machine.
 
-=== Installing Compiler
+First inspect the bootstrap.sh script, particularly the installation
+directory defined at the top
 
-  mkdir -p $DEV_DIR
-  cd $DEV_DIR
-  mkdir -p $DEV_DIR/modules
-  wget 'https://sourcery.mentor.com/sgpp/lite/arm/portal/package8734/public/arm-none-eabi/arm-2011.03-42-arm-none-eabi-i686-pc-linux-gnu.tar.bz2'
-  tar -xvf arm-*-arm-none-eabi-i686-pc-linux-gnu.tar.bz2
+  emacs bootstrap.sh
 
-=== Install QEMU
+Next run the bootstrap script
 
-  export PATH=$DEV_DIR/bin:$DEV_DIR/arm-2011.03/bin:$PATH
-  cd $DEV_DIR
-  sudo apt-get install -y git-core zlib1g-dev libsdl1.2-dev
-  git clone https://github.com/qemu/QEMU.git qemu
-  cd $DEV_DIR/qemu
-  ./configure --target-list="arm-softmmu" --prefix=$DEV_DIR --enable-sdl
-  make -j 4
-  fakeroot make install
+  bash bootstrap.sh
 
-=== Checkout and Build LambdaPi
+This will build a recent version of QEMU and install the GNU C
+toolchain for ARM
 
-  cd $DEV_DIR/
-  git clone git://gitorious.org/lambdapi/lambdapi.git LambdaPi
-  cd LambdaPi
-  sed -i -e 's|/usr/local/lib/gcc/$(ARCH)/$(GCCVERSION)/|'"$DEV_DIR/arm-2011.03/lib/gcc/arm-none-eabi/4.5.2/"'|'
-  make
+== Building the Project
 
-=== Run Lambda Pi
+Inspect the rake file to make sure the directory where the tools were
+installed in the previous step are correct
 
-  qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 \
-    -device pl011 -kernel ./bin/kernel.elf -nographic
+  emacs Rakefile
 
-How to actually do something with LambdaPi I haven't worked out yet.
+Next run
 
-=== Notes
+  rake run
 
-There is a more detailed development log contained in NOTES.
+This will build the kernel and run qemu.
+
+== Where to next?
+
+There is a more detailed development log contained in the file NOTES
+in the root directory.
