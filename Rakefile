@@ -67,6 +67,33 @@ class Builder
     kernel_image
   end
 
+
+  def run_kernel(kernel_image)
+    task :run_kernel => [ kernel_image ] do
+      run "#{qemu_dir}/qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel #{kernel_image} -nographic"
+    end
+  end
+
+  def run_kernel_image(kernel_image)
+    task :run_kernel_image => [ kernel_image ] do
+      run "#{qemu_dir}/qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -nographic #{kernel_image}"
+    end
+  end
+
+  def debug_kernel(kernel_image)
+    task :debug_kernel => [ kernel_image ] do
+      run "#{qemu_dir}/qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel #{kernel_image} -nographic -S -s"
+    end
+  end
+
+  def clean
+    run "rm -rf #{build_dir}"
+  end
+
+  def run(cmd)
+    sh cmd
+  end
+
   def tasks
     directory build_dir 
     directory obj_dir
@@ -89,20 +116,11 @@ class Builder
     kernel_image = build_kernel_image(kernel_file, kernel_elf_image)
     task :default => [ kernel_elf_image, kernel_image ] 
     task :run => run_kernel(kernel_elf_image)
-  end
-
-  def run_kernel(kernel_image)
-    task :run_kernel => [ kernel_image ] do
-      run "#{qemu_dir}/qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel #{kernel_image} -nographic"
+    task :run_image => run_kernel_image(kernel_image)
+    task :debug => debug_kernel(kernel_elf_image)
+    task :gdb do
+      run "#{tool_dir}/arm-none-eabi-gdb --annotate=3 -x #{proj_dir}/gdb.debug"
     end
-  end
-
-  def clean
-    run "rm -rf #{build_dir}"
-  end
-
-  def run(cmd)
-    sh cmd
   end
 
 end

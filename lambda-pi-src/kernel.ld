@@ -1,4 +1,4 @@
-ENTRY(__vector_table)
+ENTRY(__reset)
 SECTIONS
 {
 	. = 0x0;

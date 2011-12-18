@@ -1,0 +1,2 @@
+file /home/richcole/RaspberryPi/build/kernel.elf
+target extended-remote localhost:1234

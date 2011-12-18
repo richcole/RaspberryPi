@@ -1,0 +1,120 @@
+= Notes
+
+This is a development log for the operating system. So it is a record of my attempt to learn
+about the ARM architecture and play with ideas in operating systems.
+
+== Start at the beginning
+
+Execution being at the top of the vector table, vector_table.s. This
+loads the reset function pointer into the program count (a way to jump
+I guess) and proceeds to reset.s.
+
+Reset.s essentially sets up a number of stacks. The jumps into the c
+entry point.
+
+I guess that B . is a no-op operation. B means branch.
+
+pl011.c provides code to access the UART. 
+
+  http://infocenter.arm.com/help/topic/com.arm.doc.ddi0183f/DDI0183.pdf
+
+DMB tells the compiler not to re-order reads. It is used while reading from
+the serial port.
+
+  http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0489c/CIHGHHIE.html
+
+Here is a list of the ARM instruction set. 
+
+  http://infocenter.arm.com/help/topic/com.arm.doc.qrc0001m/QRC0001_UAL.pdf
+
+The function pl011_putc busy waits. That could be useful as a
+debugging technique but I guess is bad form for an operating system.
+
+The location of the UART registers is hard coded in platorm.h. It is different on the
+Raspberry PI than on the qemu version.
+
+The pl011 responds has an interupt which is configured when the device
+is initialized.
+
+The ARM and particularly the pl011 seem to have DMA's. It would seem that maybe
+by configuring a DMA the CPU could be freed from having to do the puts for each
+character as soon as the UART buffer becomes free.
+
+There an memory management system somewhere on this system. It must
+affect access to devices and such.
+
+Here is a link to a set of slides about ARM
+
+  http://simplemachines.it/doc/arm_inst.pdf
+
+== Learning from Lambda-Pi
+
+I'm learning from LambdaPi. The source for LambdaPi is in the
+lambda-pi-src directory. I moved the files about a bit but otherwise
+have left the source rather unchanged.
+
+My startings of an OS, which are copied in parts from LambdaPi are in 
+the src directory.
+
+== Patching QEMU
+Date: 2011-12-18 15:26:53 -0800
+
+So QEMU was seg faulting when I tried to run my OS. I did a debug
+build of qemu and caught the seg fault. It is because the machine
+configuration has more serial devices than are permitted by a constant
+in QEMU, kind of weird, anyway when I increased that constant, like
+magic my OS just works.
+
+Here is the patch for QEMU.
+
+  diff --git a/sysemu.h b/sysemu.h
+  index 22cd720..783909b 100644
+  --- a/sysemu.h
+  +++ b/sysemu.h
+  @@ -153,7 +153,7 @@ int do_pcie_aer_inejct_error(Monitor *mon,
+   
+   /* serial ports */ 
+   
+  -#define MAX_SERIAL_PORTS 4
+  +#define MAX_SERIAL_PORTS 8
+   
+   extern CharDriverState *serial_hds[MAX_SERIAL_PORTS];
+
+== STTY
+Date: 2011-12-18 15:26:44 -0800
+
+QEMU messes with the terminal. To restore the terminal after it has
+been messed with by QEMU I run
+
+  stty '6d02:5:4bf:8a3b:3:1c:7f:15:4:0:1:ff:11:13:1a:ff:12:f:17:16:ff:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0'
+
+which restore the terminal defaults.
+
+== Syntax of this file
+Date: 2011-12-18 15:26:41 -0800
+
+One day it would make sense to write a program that will combine these
+notes into a website. I will however refrain from doing that at
+present as it will take time away from OS tasks and the text
+representation is reasonable.
+
+== Getting Better at Emacs Lisp
+Date: 2011-12-18 15:26:38 -0800
+
+Another constant distraction is the desire to have some handy
+functions written in emacs lisp. For example adding the date to these
+entries.
+
+  (global-set-key "\C-cd" 'insert-date)
+  (defun insert-date () "insert the current date" (interactive) 
+    (shell-command "echo Date: $(date +'%Y-%m-%d %H:%M:%S %z')" t))
+
+== RaspberryPi Updates
+Date: 2011-12-18 15:26:35 -0800
+
+A new expansion board was released. Still no word of when the
+Raspberry Pi will ship.
+
+
+
+

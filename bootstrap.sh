@@ -17,7 +17,7 @@ set -e -x
   cd $DEV_DIR
   git clone https://github.com/qemu/QEMU.git qemu
   cd $DEV_DIR/qemu
-  ./configure --target-list="arm-softmmu" --prefix=$DEV_DIR --enable-sdl
+  ./configure --enable-debug --enable-debug-tcg --target-list="arm-softmmu" --prefix=$DEV_DIR --enable-sdl --disable-pie
   make -j 4
   fakeroot make install
 
