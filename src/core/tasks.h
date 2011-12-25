@@ -3,14 +3,15 @@
 
 #include <stdint.h>
 
+typedef struct Task task_t;
+
 struct Task {
   size_t sp;
   task_t *next;
   task_t *prev;
 };
 
-typedef struct Task task_t;
-
 extern task_t *current_task;
+void yield();
 
 #endif

@@ -32,7 +32,7 @@ class Builder
   end
 
   def run_as(src_file)
-    obj_file = obj_dir + "/" + File.basename(src_file).gsub(".s", ".o")
+    obj_file = obj_dir + "/asm_" + File.basename(src_file).gsub(".s", ".o")
     file(obj_file => [ src_file, obj_dir, build_dir ]) do 
       run "#{as} #{as_flags} -o #{obj_file} #{src_file}"
     end

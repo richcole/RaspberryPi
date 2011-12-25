@@ -206,6 +206,33 @@ The range of these registers is well beyond the main memory range of
 
 So back now to the UART device and sending text to the UART device.
 
+It seems that the UART device is able to interact with a DMA device to
+copy data from a buffer into it's fifo when the data becomes
+available.
+
+=== Found the DMA Channel Description
+Date: 2011-12-24 23:40:23 -0800
+
+  http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0287b/ch16s02s04.html
+
+for the versatilepb board. Question is what is the specification for
+the Pi?
+
+I guess it is straight forward to reverse engineer the channel number
+of the UART by cycling through the channels which different data and
+seeing which one comes out the UART.
+
+Since the Pi forums are not forthcoming about the configuration of the
+UART I'll presume that if I ever get a Pi that I'll be able to work
+out the channels.
+
+This lets me progress with experimenting with the DMA under QEMU.
+
+
+
+
+
+
 
 
 

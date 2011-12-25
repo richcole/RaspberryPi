@@ -1,19 +1,24 @@
 .include "macros.s"
 
-save_context:
-push {lr,r0-r12}
-ldr  r0, [current_task]
+.global current_task
+
+FUNC save_context
+push {r0-r12,lr}
+ldr  r0, =current_task
+ldr  r0, [r0]
 str  sp, [r0]
-bx          
+bx   lr
 
-next_task:
-ldr  r0, [current_task, #4]
-str  r0, [current_task]
+FUNC next_task
+ldr  r0, =current_task
+ldr  r1, [r0, #4]        
+str  r1, [r0]
 
-load_context:
-ldr  r0, [current_task]
+FUNC load_context
+ldr  r0, =current_task
+ldr  r0, [r0]        
 ldr  sp, [r0]
-pop  {lr,r0-r12}
+pop  {r0-r12,lr}
 bx   lr
         
         
