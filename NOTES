@@ -1,7 +1,50 @@
 = Notes
 
-This is a development log for the operating system. So it is a record of my attempt to learn
-about the ARM architecture and play with ideas in operating systems.
+This is a development log for the operating system. So it is a record
+of my attempt to learn about the ARM architecture and play with ideas
+in operating systems.
+
+Notes are written in reverse order.
+
+== Up and running using Debian
+
+I tried berryboot but I couldn't see a way to make it boot into a
+custom kernel. So instead I'm going to try seeing if I can load a
+kernel from linux and hijack the system that way.
+
+It should also prove useful to know a bit more about how kernel
+modules work anyway.
+
+So I'm running Debian after installing it iwht berryboot. I installed
+emacs and git and checked out my github repo.
+
+Next thing to try is see how fast I can scan memory. 200MB/s which is about
+1/6th the speed of my desktop. Pretty slow.
+
+  mkdir -p build
+  gcc -O -o build/memtest src/memtest.c
+  build/memtest
+
+I need the kernel headers installed
+
+  sudo apt-get install linux-headers-3.2.0-3-rpi
+
+I also installed emacs and ruby
+
+  sudo apt-get install emacs ruby
+
+Compiling the basic module ends in failure because this Rasbian system
+can't find kernel sources. They don't seem to be in the repo.
+
+I think I should go back to the idea of trying to get the serial port
+working however that involves buying the right usb to serial
+device. The pi seems quite a bit harder to work with than beagle bone
+was at least for bootstrapping.
+
+
+
+
+
 
 == Start at the beginning
 
