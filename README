@@ -21,7 +21,7 @@ and make an empty config.txt file on your SD card. I presume you
 already have one with the other stuff used by the pi to boot, e.g. I
 had a berriboot SD card.
 
-=== Boostrap your Linux desktop for developent
+=== Bootstrap your Linux desktop for development
 
 Execute 
 
@@ -35,7 +35,7 @@ This will install the GNU ARM C compiler.
 See this diagram https://sites.google.com/site/burngatehouse/home/drawings/GPIOs2.gif
 
 I position the board so that the HDMI cable is on the left the serial
-cables and ethernet cable are on the bottom. When position so the set
+cables and Ethernet cable are on the bottom. When position so the set
 of p1 connectors is on the top right of the board. It is labled on the
 board p1 just to the top left of the connector. The UART lines 3
 (GND), 4 (TX), 5 (RX) counting down from the top the right column from
