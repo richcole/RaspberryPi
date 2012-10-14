@@ -21,16 +21,11 @@ extern void dummy ( unsigned int );
 #define AUX_MU_STAT_REG 0x20215064
 #define AUX_MU_BAUD_REG 0x20215068
 
-//GPIO14  TXD0 and TXD1
-//GPIO15  RXD0 and RXD1
-//alt function 5 for uart1
-//alt function 0 for uart0
-
-//((250,000,000/115200)/8)-1 = 270
-
 int notmain ( void )
 {
     unsigned int ra;
+    char *message = "\nBare Metal Programming For The Win!\n";
+    char *s;
 
     PUT32(AUX_ENABLES,1);
     PUT32(AUX_MU_IER_REG,0);
@@ -54,11 +49,11 @@ int notmain ( void )
 
     PUT32(AUX_MU_CNTL_REG,2);
 
-    ra=0;
-    while(1) {
-      if(GET32(AUX_MU_LSR_REG)&0x20) break;
+
+    for(s=message;*s;++s) {
+      while((GET32(AUX_MU_LSR_REG)&0x20) == 0);
+      PUT32(AUX_MU_IO_REG,*s);
     }
-    PUT32(AUX_MU_IO_REG,'!');
 
     while(1);
     return(0);
