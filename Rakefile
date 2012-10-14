@@ -76,9 +76,9 @@ class KernelBuilder < Builder
 
   attr_accessor :arch, :elf_binary
 
-  def initialize
-    super
-    init_module("kernel")
+  def initialize(module_name)
+    super()
+    init_module(module_name)
     @arch       = "arm-linux-gnueabi"
     @assembler  = arch + "-as"
     @compiler   = arch + "-gcc"
@@ -97,9 +97,11 @@ class KernelBuilder < Builder
     directory bin_dir
     task elf_binary => [bin_dir] + objs do
       linker_file = src_dir / "linker.ld"
+      sh "mkdir -p #{File.dirname(elf_binary)}"
       sh "#{linker} -T #{linker_file} #{objs.join(" ")} -o #{elf_binary}"
     end
     task binary => [ elf_binary ] do
+      sh "mkdir -p #{File.dirname(binary)}"
       sh "#{objcopy} #{elf_binary} -O binary #{binary}"
     end
   end
@@ -130,10 +132,11 @@ class SerialBuilder < Builder
 end
 
 b = Builder.new
-k = KernelBuilder.new
+k1 = KernelBuilder.new("helloworld")
+k2 = KernelBuilder.new("kernel")
 s = SerialBuilder.new
 
-builders = [b, k, s]
+builders = [b, k1, k2, s]
 
 for x in builders do
   x.run
@@ -146,8 +149,16 @@ task :bootstrap do
   sh "sudo apt-get install gcc-4.4-arm-linux-gnueabi"
 end
 
-task :run => [k.binary, s.binary] do
-  sh "#{s.binary} bootload #{k.binary}"
+task :run => :helloworld
+
+task :helloworld => [k1.binary, s.binary] do
+  sh "#{s.binary} bootload #{k1.binary}"
+end
+
+task :kernel => [k2.binary, s.binary] do
+  sh "#{s.binary} bootload #{k2.binary}"
 end
   
-
+task :clean do
+  sh "rm -rf build"
+end
