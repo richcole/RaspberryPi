@@ -17,3 +17,18 @@ GET32:
 .globl dummy
 dummy:
     bx lr
+
+.globl spsr
+spsr:   
+    mrs r0,spsr
+    bx lr
+
+.globl cpsr
+cpsr:   
+    mrs r0,cpsr
+    bx lr
+
+.globl scr
+scr:   
+    mrc p15,0,r0,c1,c0,1
+    bx lr

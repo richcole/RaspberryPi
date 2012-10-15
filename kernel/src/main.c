@@ -1,8 +1,11 @@
 
-extern void dummy ( unsigned int );
-
 typedef unsigned short uint16;
 typedef unsigned int   uint32;
+
+extern void dummy ( uint32 );
+extern uint32 spsr();
+extern uint32 cpsr();
+extern uint32 scr();
 
 struct gio_t {
   uint32 sel[6]; // 0x0
@@ -59,6 +62,51 @@ void wait_cycles(int cycles) {
 struct gio_t volatile *gio = (struct gio_t *)0x20200000;
 struct uart_t volatile *uart = (struct uart_t *)0x20215000;
 
+uint32 irq_disabled() {
+  return spsr() & (0x1 << 7);
+}
+
+uint32 fiq_disabled() {
+  return spsr() & (0x1 << 6);
+}
+
+uint32 mode() {
+  return cpsr() & 0x1f;
+}
+
+#define MODE_USER  0b10000
+#define MODE_FIQ   0b10001
+#define MODE_IRQ   0b10010
+#define MODE_SUPER 0b10011
+#define MODE_ABORT 0b10111
+#define MODE_UNDEF 0b11011
+#define MODE_SYS   0b11111
+#define MODE_MON   0b10110
+
+char *mode_name(uint32 mode) {
+  switch(mode) {
+  case MODE_USER:  
+    return "MODE_USER";
+  case MODE_FIQ:   
+    return "MODE_FIQ";
+  case MODE_IRQ:   
+    return "MODE_IRQ";
+  case MODE_SUPER:   
+    return "MODE_SUPER";
+  case MODE_ABORT: 
+    return "MODE_ABORT";
+  case MODE_UNDEF: 
+    return "MODE_UNDEF";
+  case MODE_SYS:   
+    return "MODE_SYS";
+  case MODE_MON:   
+    return "MODE_MON";
+  }
+  return "MODE_NONE";
+}
+
+
+
 void init_uart() {
 
   uart->enable = 0x1;
@@ -89,30 +137,6 @@ void init_uart() {
   uart->cntl     = 2;
 };
 
-int print_nl(char *buf) {
-  buf[0] = '\n';
-  buf[1] = 0;
-  return 1;
-}
-
-int print_hex(char *buf, unsigned int p) {
-  int i;
-  unsigned int c;
-  buf[0] = '0';
-  buf[1] = 'x';
-  for(i=0;i<8;++i) {
-    c = ((p>>(i*4))&0xf);
-    if ( c < 10 ) {
-      buf[9-i] = '0' + c;
-    }
-    else {
-      buf[9-i] = 'A' + (c - 10);
-    }
-  };
-  buf[10] = 0;
-  return 10;
-}
-
 void print_buf(char *buf) {
   for(;*buf;++buf) {
     while((uart->lsr&0x20) == 0);
@@ -120,18 +144,34 @@ void print_buf(char *buf) {
   }
 }
 
-void print_addresses_neq(unsigned int p, uint32 volatile *q, char *name) {
-  char buf[100];
-  int  i = 0;
-  i += print_hex(buf + i, p);
-  buf[i++] = ' ';
-  i += print_hex(buf + i, (unsigned int)q);
-  buf[i++] = ' ';
-  buf[i++] = 0;
-  print_buf(buf);
+void print_ch(char ch) {
+  while((uart->lsr&0x20) == 0);
+  uart->io = ch;
+}
 
+void print_hex(uint32 p) {
+  int i;
+  uint32 c;
+  print_ch('0');
+  print_ch('x');
+  for(i=0;i<8;++i) {
+    c = ((p>>((7-i)*4))&0xf);
+    if ( c < 10 ) {
+      print_ch('0' + c);
+    }
+    else {
+      print_ch('A' + c - 10);
+    }
+  };
+}
+
+void print_addresses_neq(uint32 p, uint32 volatile *q, char *name) {
+  print_hex(p);
+  print_ch(' ');
+  print_hex((uint32)q);
+  print_ch(' ');
   print_buf(name);
-  if ( p != (unsigned int)q ) {
+  if ( p != (uint32)q ) {
     print_buf(" NOT EQUAL");
   }
   print_buf("\n");
@@ -139,9 +179,33 @@ void print_addresses_neq(unsigned int p, uint32 volatile *q, char *name) {
 
 int notmain ( void )
 {
-    char *message = "\nBare Metal Programming For The Win!\n";
     init_uart();
     print_buf("\nBare Metal Programming For The Win!!\n");
+    print_buf("spsr ");
+    print_hex(spsr());
+    print_buf("\n");
+
+    print_buf("cpsr ");
+    print_hex(cpsr());
+    print_buf("\n");
+
+    print_buf("scr ");
+    print_hex(scr());
+    print_buf("\n");
+
+    print_buf("mode ");
+    print_hex(mode());
+    print_buf(" ");
+    print_buf(mode_name(mode()));
+    print_buf("\n");
+
+    print_buf("IRQ ");
+    print_hex(irq_disabled());
+    print_buf("\n");
+
+    print_buf("FIQ ");
+    print_hex(fiq_disabled());
+    print_buf("\n");
 
     while(1);
     return 0;
