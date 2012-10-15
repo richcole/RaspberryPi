@@ -5,7 +5,8 @@ typedef unsigned int   uint32;
 extern void dummy ( uint32 );
 extern uint32 spsr();
 extern uint32 cpsr();
-extern uint32 scr();
+extern uint32 c1();
+extern void enable_irq();
 
 struct gio_t {
   uint32 sel[6]; // 0x0
@@ -105,18 +106,21 @@ char *mode_name(uint32 mode) {
   return "MODE_NONE";
 }
 
-
-
 void init_uart() {
 
   uart->enable = 0x1;
+  uart->lcr    = 0x3;
   uart->ier    = 0;
   uart->cntl   = 0;
-  uart->lcr    = 0x3;
   uart->mcr    = 0;
   uart->ier    = 0;
+
+  uart->lcr    = 0x3 | (0x1 << 6);
   uart->iir    = 0xC6;
   uart->baud   = 270;
+
+  uart->lcr    = 0x3;
+  uart->iir    = 0x3;
 
   // pin 13 -> b000 = input 
   // pin 14 -> b001 = output 
@@ -133,8 +137,8 @@ void init_uart() {
   // disable clk as we've finished modifying the pud state 
   gio->pudclk[0] = 0;
 
-  // turn on the uart
-  uart->cntl     = 2;
+  // turn on the uart for send and receive
+  uart->cntl     = 3;
 };
 
 void print_buf(char *buf) {
@@ -177,36 +181,60 @@ void print_addresses_neq(uint32 p, uint32 volatile *q, char *name) {
   print_buf("\n");
 }
 
+void echo() {
+  int c = uart->io;
+  print_ch(c);
+  print_ch('x');
+}
+
+void c_irq_handler() {
+  print_ch('x');
+}
+
 int notmain ( void )
 {
-    init_uart();
-    print_buf("\nBare Metal Programming For The Win!!\n");
-    print_buf("spsr ");
-    print_hex(spsr());
-    print_buf("\n");
+  init_uart();
 
-    print_buf("cpsr ");
-    print_hex(cpsr());
-    print_buf("\n");
+  enable_irq();
+  unsigned int volatile *irq_enable = (unsigned int *)0x2000B214;
+  *irq_enable |= (0x1 << (57 - 32));
+  
+  print_buf("\nBare Metal Programming For The Win!!\n");
+  print_buf("spsr ");
+  print_hex(spsr());
+  print_buf("\n");
+  
+  print_buf("cpsr ");
+  print_hex(cpsr());
+  print_buf("\n");
+  
+  print_buf("c1 ");
+  print_hex(c1());
+  print_buf("\n");
+  
+  print_buf("mode ");
+  print_hex(mode());
+  print_buf(" ");
+  print_buf(mode_name(mode()));
+  print_buf("\n");
+  
+  print_buf("IRQ ");
+  print_hex(irq_disabled());
+  print_buf("\n");
+  
+  print_buf("FIQ ");
+  print_hex(fiq_disabled());
+  print_buf("\n");
+  
+  print_buf("LSR ");
+  print_hex(uart->lsr);
+  print_buf("\n");
 
-    print_buf("scr ");
-    print_hex(scr());
-    print_buf("\n");
-
-    print_buf("mode ");
-    print_hex(mode());
-    print_buf(" ");
-    print_buf(mode_name(mode()));
-    print_buf("\n");
-
-    print_buf("IRQ ");
-    print_hex(irq_disabled());
-    print_buf("\n");
-
-    print_buf("FIQ ");
-    print_hex(fiq_disabled());
-    print_buf("\n");
-
-    while(1);
-    return 0;
+  // echo back characters received
+  while(1) {
+    while((uart->lsr & 0x1) == 0);
+    print_ch(uart->io);
+  }
+  
+  return 0;
 }

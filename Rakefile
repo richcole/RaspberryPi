@@ -159,9 +159,11 @@ task :helloworld => [k1.binary, s.binary] do
   sh "#{s.binary} bootload #{k1.binary}"
 end
 
-task :kernel => [k2.binary, s.binary] do
+task :run_kernel => [k2.binary, s.binary] do
   sh "#{s.binary} bootload #{k2.binary}"
 end
+  
+task :kernel => [k2.binary, s.binary] 
   
 task :clean do
   sh "rm -rf build"

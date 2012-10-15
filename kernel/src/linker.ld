@@ -6,6 +6,8 @@ MEMORY
 SECTIONS
 {
     .text : { *(.text*) } > ram
+	__bss_start__ = .;
     .bss : { *(.bss*) *(.rodata) *(.data) } > ram
+	__bss_end__ = .;
 }
 
