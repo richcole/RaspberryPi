@@ -31,14 +31,14 @@ class Builder
 
   def run_module
     directory obj_dir 
+    Dir.glob(src_dir / "*.s").each do |src_file| 
+      objs << assemble(src_file)
+    end
     Dir.glob(src_dir / "*.cpp").each do |src_file| 
       objs << compile(src_file)
     end
     Dir.glob(src_dir / "*.c").each do |src_file| 
       objs << compile(src_file)
-    end
-    Dir.glob(src_dir / "*.s").each do |src_file| 
-      objs << assemble(src_file)
     end
   end
 
@@ -86,6 +86,10 @@ class KernelBuilder < Builder
     @objcopy    = arch + "-objcopy"
     @binary     = build_dir / "kernel.bin"
     @elf_binary = build_dir / "kernel.elf"
+
+    @asflags   = "--warn --fatal-warnings -mcpu=arm1176jzf-s -march=armv6"
+    @cflags    = "-Wall -nostdlib -nostartfiles -ffreestanding"
+    @ldflags   = "-Wall -m32"
   end
 
   def default
