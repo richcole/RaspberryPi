@@ -36,20 +36,20 @@ struct gio_t {
 };
 
 struct uart_t {
-  uint32 irq;
-  uint32 enable;
-  uint32 pad[14];
-  uint32 io;
-  uint32 ier;
-  uint32 iir;
-  uint32 lcr;
-  uint32 mcr;
-  uint32 lsr;
-  uint32 msr;
-  uint32 scr;
-  uint32 cntl;
-  uint32 stat;
-  uint32 baud;
+  uint32 irq;      // 0
+  uint32 enable;   // 4
+  uint32 pad[14];  // 8
+  uint32 io;       // 40
+  uint32 ier;      // 44
+  uint32 iir;      // 48
+  uint32 lcr;      // 4C
+  uint32 mcr;      // 50
+  uint32 lsr;      // 54
+  uint32 msr;      // 58
+  uint32 scr;      // 5C
+  uint32 cntl;     // 60
+  uint32 stat;     // 64
+  uint32 baud;     // 68
 };
 
 void wait_cycles(int cycles) {
@@ -62,13 +62,16 @@ void wait_cycles(int cycles) {
 
 struct gio_t volatile *gio = (struct gio_t *)0x20200000;
 struct uart_t volatile *uart = (struct uart_t *)0x20215000;
+unsigned int volatile *irq_enable  = (unsigned int *)0x2000B210;
+unsigned int volatile *irq_disable = (unsigned int *)0x2000B21C;
+unsigned int uart_intr = 0x1 << 29;
 
 uint32 irq_disabled() {
-  return spsr() & (0x1 << 7);
+  return cpsr() & (0x1 << 7);
 }
 
 uint32 fiq_disabled() {
-  return spsr() & (0x1 << 6);
+  return cpsr() & (0x1 << 6);
 }
 
 uint32 mode() {
@@ -109,18 +112,13 @@ char *mode_name(uint32 mode) {
 void init_uart() {
 
   uart->enable = 0x1;
-  uart->lcr    = 0x3;
   uart->ier    = 0;
   uart->cntl   = 0;
+  uart->lcr    = 0x3;
   uart->mcr    = 0;
-  uart->ier    = 0;
-
-  uart->lcr    = 0x3 | (0x1 << 6);
+  uart->ier    = 0x5;
   uart->iir    = 0xC6;
   uart->baud   = 270;
-
-  uart->lcr    = 0x3;
-  uart->iir    = 0x3;
 
   // pin 13 -> b000 = input 
   // pin 14 -> b001 = output 
@@ -188,17 +186,22 @@ void echo() {
 }
 
 void c_irq_handler() {
-  print_ch('x');
+  unsigned int rb;
+  unsigned int x;
+
+  while(((rb = uart->iir)&0x1) == 0) {
+    if ((rb&0x6)==4) {
+      x = uart->io;
+      print_ch(x);
+    }
+  }
 }
 
 int notmain ( void )
 {
+  *irq_disable = uart_intr;
   init_uart();
 
-  enable_irq();
-  unsigned int volatile *irq_enable = (unsigned int *)0x2000B214;
-  *irq_enable |= (0x1 << (57 - 32));
-  
   print_buf("\nBare Metal Programming For The Win!!\n");
   print_buf("spsr ");
   print_hex(spsr());
@@ -230,11 +233,22 @@ int notmain ( void )
   print_hex(uart->lsr);
   print_buf("\n");
 
-  // echo back characters received
+  *irq_enable = uart_intr;
+  enable_irq();
+  
+  print_buf("IRQ ");
+  print_hex(irq_disabled());
+  print_buf("\n");
+ 
+ // echo back characters received
+  /*
   while(1) {
     while((uart->lsr & 0x1) == 0);
     print_ch(uart->io);
   }
+  */
+
+  while(1);
   
   return 0;
 }
