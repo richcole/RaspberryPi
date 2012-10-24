@@ -5,7 +5,7 @@ class String
 end
 
 class Builder
-  include Rake::DSL
+#  include Rake::DSL
 
   attr_reader :proj_dir,  :build_dir, :src_dir, :obj_dir, :bin_dir
   attr_reader :assembler, :compiler,  :linker,  :objcopy

@@ -81,6 +81,15 @@ irq:
     pop  {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
     subs pc,lr,#4
 
+switch_to:
+    mov sp,r0
+    pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+    br  lr,#4
+
+switch_from:
+    push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+    mov  r0,sp
+
 FUNC spsr
     mrs r0,spsr
     bx lr
