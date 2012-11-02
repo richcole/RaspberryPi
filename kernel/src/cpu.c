@@ -1,13 +1,13 @@
 #include "cpu.h"
 
-#define MODE_USER  0b10000
-#define MODE_FIQ   0b10001
-#define MODE_IRQ   0b10010
-#define MODE_SUPER 0b10011
-#define MODE_ABORT 0b10111
-#define MODE_UNDEF 0b11011
-#define MODE_SYS   0b11111
-#define MODE_MON   0b10110
+#define MODE_USER  0x10 
+#define MODE_FIQ   0x11 
+#define MODE_IRQ   0x12 
+#define MODE_SUPER 0x13
+#define MODE_ABORT 0x17
+#define MODE_UNDEF 0x1a 
+#define MODE_SYS   0x1f
+#define MODE_MON   0x16 
 
 void wait_cycles(uint32 cycles) {
   while(cycles > 0) {

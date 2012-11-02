@@ -15,7 +15,10 @@ struct task_list_t *blocked_tasks = 0;
 struct task_list_t *curr_task = 0;
 
 extern void switch_to(uint32 sp);
-extern uint switch_from();
+extern uint32 switch_from();
+
+void task_set_blocked(struct task_t *task) {
+}
 
 void switch_to_next_task(struct task_t *task) {
   if ( curr_task == 0 || curr_task->next == 0 ) {
@@ -25,7 +28,7 @@ void switch_to_next_task(struct task_t *task) {
     curr_task = curr_task->next;
   }
   if ( curr_task != 0 ) {
-    switch_to(curr_task->sp);
+    switch_to(curr_task->task->sp);
   }
 }
 

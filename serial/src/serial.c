@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <stdlib.h>
 
 struct channel;
@@ -28,11 +29,13 @@ struct processor {
   struct processor *next;
 };
 
-struct copy_processor : processor {
+struct copy_processor {
+  struct processor processor;
   struct channel *dest_channel;
 };
 
-struct reply_processor : processor {
+struct reply_processor {
+  struct processor processor;
   struct channel *reply_channel;
   char   buf[4096];
   int    head;
@@ -41,7 +44,8 @@ struct reply_processor : processor {
   int    state;
 };
 
-struct pipe_processor : processor {
+struct pipe_processor {
+  struct processor processor;
   struct channel *reply_channel;
   char   buf[4096];
   int    head;
@@ -89,7 +93,7 @@ struct context {
 
 int close_on_error(struct channel *c, int result) {
   if ( result < 0 ) {
-    c->is_closed = true;
+    c->is_closed = 1;
   }
   return result;
 }
@@ -132,7 +136,9 @@ void copy_processor_handler(
 {
   struct copy_processor *copy_processor = (struct copy_processor *)processor;
   struct channel *c = copy_processor->dest_channel;
-  c->is_closed || close_on_error(c, write(c->fd, buf, buf_len));
+  if ( ! c->is_closed ) {
+    close_on_error(c, write(c->fd, buf, buf_len));
+  }
 };
 
 void reply_processor_handler(
@@ -156,11 +162,12 @@ void reply_processor_handler(
     p->buf[p->head] = 0;
     char *c = strstr(p->buf, p->search_string);
     if ( c != 0 ) {
-      ch->is_closed || 
+      if ( ! ch->is_closed ) {
         close_on_error(
           ch, 
           write(ch->fd, p->reply_string, strlen(p->reply_string)
-      ));
+	));
+      }
       p->head = 0;
       p->buf[p->head] = 0;
       p->state -= 1;
@@ -178,7 +185,7 @@ void reply_processor_handler(
 struct processor* new_copy_processor(struct channel *dest_channel) {
   struct copy_processor *p = 
     (struct copy_processor *) calloc(1, sizeof(struct copy_processor));
-  p->processor = &copy_processor_handler;
+  p->processor.processor = &copy_processor_handler;
   p->dest_channel = dest_channel;
   return (struct processor *)p;
 };
@@ -264,7 +271,7 @@ void pipe_processor_handler(
 struct processor* new_reply_processor(struct channel *reply_channel, char const* search_string, char const* reply_string, int num_actions) {
   struct reply_processor *p = 
     (struct reply_processor *) calloc(1, sizeof(struct reply_processor));
-  p->processor = &reply_processor_handler;
+  p->processor.processor = &reply_processor_handler;
   p->reply_channel = reply_channel;
   p->search_string = search_string;
   p->reply_string = reply_string;
@@ -275,7 +282,7 @@ struct processor* new_reply_processor(struct channel *reply_channel, char const*
 struct processor* new_pipe_processor(struct channel *reply_channel, char const* search_string, char const *cmd, char const * const * argv) {
   struct pipe_processor *p = 
     (struct pipe_processor *) calloc(1, sizeof(struct pipe_processor));
-  p->processor = &pipe_processor_handler;
+  p->processor.processor = &pipe_processor_handler;
   p->reply_channel = reply_channel;
   p->search_string = search_string;
   p->cmd = cmd;
@@ -322,7 +329,9 @@ void add_read_channels(
     struct channel *channel = &context->channels[i];
     
     if ( channel->is_input_channel ) {
-      channel->is_closed || (FD_SET(channel->fd,  &context->read_fds), 0);
+      if ( ! channel->is_closed ) {
+	FD_SET(channel->fd,  &context->read_fds);
+      }
     }
   }
 };
@@ -392,17 +401,18 @@ struct context* new_context() {
 
 void bootload_kernel(int argc, char **argv) {
 
-  if ( argc < 3 ) {
-    fprintf(stderr, "expected filename\n");
+  if ( argc < 4 ) {
+    fprintf(stderr, "bootload <device> <kernel>\n");
     exit(-1);
   }
 
   char const* binary_filename = argv[2];
+  char const* device_name = argv[3];
 
   init_signal_handlers();
   struct context* context = new_context();
 
-  context->serial = open_serial_channel (context, "/dev/ttyUSB0");
+  context->serial = open_serial_channel (context, device_name);
   context->stdin  = open_console_channel(context, STDIN_FILENO, 1);
   context->stdout = open_console_channel(context, STDOUT_FILENO, 0);
 

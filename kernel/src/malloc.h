@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+void malloc_init(void *ptr);
 void malloc_free(char *ptr);
 char* malloc_alloc(uint32 size);
 
