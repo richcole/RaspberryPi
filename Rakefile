@@ -70,18 +70,18 @@ class Builder
     end
 
     @native_objs = []
-    each_file(@src_dir, "*.cpp", "*.c") do |src_file|
+    each_file(@src_dir, "*.c") do |src_file|
       @native_objs += native_compile(src_file)
     end
 
     @tests = []
     @test_objs = []
-    each_file(@test_dir, "*.cpp", "*.c") do |src_file|
+    each_file(@test_dir, "*.c") do |src_file|
       @test_objs += native_compile(src_file)
     end
     Dir.glob(@test_dir / "test_*.c").each do |src_file|
       test_name = File.basename(src_file).sub(/\..*$/, '')
-      objs = native_compile(src_file) + @test_objs
+      objs = native_compile(src_file)
       binary = native_link(test_name, @native_objs + objs)
       @tests += execute(test_name, binary)
     end

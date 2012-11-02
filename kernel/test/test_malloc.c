@@ -2,7 +2,9 @@
 #include <malloc.h>
 #include <stdlib.h>
 
-void test_malloc() {
+#include "mock.c"
+
+void main() {
   void *free_space = malloc(1024*1024);
   malloc_init(free_space);
   char *ptr[1024];
