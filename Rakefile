@@ -14,7 +14,7 @@ class Builder
     @build_dir = @proj_dir / "build"
 
     @arm_asflags   = "--warn --fatal-warnings -mcpu=arm1176jzf-s -march=armv6"
-    @arm_cflags    = "-Wall -nostdlib -nostartfiles -ffreestanding"
+    @arm_cflags    = "-O2 -Wall -nostdlib -nostartfiles -ffreestanding"
     @arm_ldflags   = "-Wall -m32"
 
     @arm_arch     = "arm-linux-gnueabi"

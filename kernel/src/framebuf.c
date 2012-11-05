@@ -43,7 +43,7 @@ void framebuf_init() {
 
   memory_barrier();
   flush_cache();
-  mailbox_write(1, (uint32)framebuf_info);
+  mailbox_write(1, ((uint32)framebuf_info) + 0x40000000);
 
   memory_barrier();
   flush_cache();
