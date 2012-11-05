@@ -69,6 +69,16 @@ FUNC GET32
 FUNC dummy 
     bx lr
 
+FUNC flush_cache
+    mov r0, #0x0000
+    mcr p15, #0, r0, c7, c14, #0
+    mov pc,lr
+
+FUNC memory_barrier
+    mov r0, #0x0000
+    mcr p15, #0, r0, c7, c10, #5
+    mov pc,lr
+
 FUNC enable_irq
     mrs r0,cpsr
     bic r0,r0,#0x80

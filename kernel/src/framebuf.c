@@ -1,6 +1,9 @@
 #include "framebuf.h"
 #include "uart.h"
 
+extern void flush_cache();
+extern void memory_barrier();
+
 struct framebuf_info_t volatile framebuf_info_s __attribute__((aligned (16)));
 struct framebuf_info_t volatile *framebuf_info = &framebuf_info_s;
 unsigned char *framebuf_ptr = 0;
@@ -37,26 +40,24 @@ void framebuf_init() {
   framebuf_info->size = 0;
 
   print_buf("Write to Mailbox\n");
-  print_buf("framebuf: ");
-  print_hex((uint32)framebuf_info);
+
+  memory_barrier();
+  flush_cache();
   mailbox_write(1, (uint32)framebuf_info);
-  uint32 reply = 0;
-  reply = mailbox_read(1);
-  print_buf("\nreply: ");
-  print_hex(reply);
-  print_buf("\nptr: ");
-  print_hex((uint32)framebuf_info->ptr);
-  print_buf("\nsize: ");
-  print_hex((uint32)framebuf_info->size);
-  print_buf("\npitch: ");
-  print_hex((uint32)framebuf_info->pitch);
-  print_buf("\ndepth: ");
-  print_hex((uint32)framebuf_info->depth);
-  print_buf("\nwidth: ");
-  print_hex((uint32)framebuf_info->width);
-  print_buf("\nheight: ");
-  print_hex((uint32)framebuf_info->height);
+
+  memory_barrier();
+  flush_cache();
+  uint32 result = mailbox_read(1);
+  print_buf("result: ");
+  print_hex(result);
   print_buf("\n");
+
+  print_buf("Waiting\n");
+  do {
+    memory_barrier();
+    flush_cache(); 
+  } while(framebuf_info->ptr == 0);
+  print_buf("Done\n");
 
   framebuf_ptr = (unsigned char *)framebuf_info->ptr;
 
