@@ -26,11 +26,7 @@ struct framebuf_info_t {
   uint32 size;
 };
 
-extern struct framebuf_info_t volatile *framebuf_info;
-extern struct mailbox_t volatile *mailbox;
-extern uint32 status_full;
-extern uint32 status_empty;
-
 void framebuf_init();
+extern unsigned char volatile *framebuf_ptr;
 
 #endif
