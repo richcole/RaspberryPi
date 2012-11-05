@@ -4,6 +4,7 @@
 #include "gio.h"
 #include "cpu.h"
 #include "irq.h"
+#include "framebuf.h"
 
 int notmain ( void )
 {
@@ -47,6 +48,8 @@ int notmain ( void )
   print_buf("IRQ ");
   print_hex(irq_disabled());
   print_buf("\n");
+
+  framebuf_init();
  
   while(1);
   

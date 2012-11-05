@@ -5,7 +5,7 @@ class String
 end
 
 class Builder
-#  include Rake::DSL
+  include Rake::DSL
 
   attr_accessor :build, :tests, :clean, :binary, :default
 
@@ -17,12 +17,12 @@ class Builder
     @arm_cflags    = "-Wall -nostdlib -nostartfiles -ffreestanding"
     @arm_ldflags   = "-Wall -m32"
 
-    @arm_arch       = "arm-none-eabi"
+    @arm_arch     = "arm-linux-gnueabi"
+    # @arm_arch       = "arm-none-eabi"
     @arm_objcopy    = @arm_arch + "-objcopy"
     @arm_compiler   = @arm_arch + "-gcc"
     @arm_linker     = @arm_arch + "-ld"
     @arm_assembler  = @arm_arch + "-as"
-#   @arch       = "arm-linux-gnueabi"
 
     @native_cflags  = "-Wall -ggdb"
     @native_asflags = ""
@@ -135,7 +135,7 @@ class Builder
     task test_bin => [ @native_bin_dir ] + obj_files do
       sh "#{@native_compiler} -o #{test_bin} #{obj_files.join(" ")}"
     end
-    return [ test_bin ]
+    return test_bin
   end
 
 end
@@ -184,8 +184,8 @@ end
 k1 = KernelBuilder.new("helloworld")
 k2 = KernelBuilder.new("kernel")
 s = SerialBuilder.new
-# device = "/dev/ttyUSB0"
-device = "/dev/tty.SLAB_USBtoUART"
+device = "/dev/ttyUSB0"
+# device = "/dev/tty.SLAB_USBtoUART"
 
 builders = [k1, k2, s]
 builders.each { |x| x.tasks }
