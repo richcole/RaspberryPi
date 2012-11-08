@@ -38,6 +38,10 @@ class Builder
     @src_dir        = @proj_dir  / "src"
     @test_dir       = @proj_dir  / "test"
 
+    @include_dir    = @proj_dir  / "include"
+    @lib_dir        = @proj_dir  / "lib"
+    @libs           = ""
+
     @arm_obj_dir    = @build_dir / "obj" / "arm"
     @arm_bin_dir    = @build_dir / "bin" / "arm"
     @arm_objs       = []
@@ -108,23 +112,23 @@ class Builder
 
   def arm_compile(src_file)
     obj = @arm_obj_dir / File.basename(src_file) + ".o"
-    task obj => [@arm_obj_dir, src_file] do
-      sh "#{@arm_compiler} #{@arm_cflags} -I#{@src_dir} -c -o #{obj} #{src_file}"
+    file obj => [@arm_obj_dir, src_file] do
+      sh "#{@arm_compiler} #{@arm_cflags} -I#{@include_dir} -I#{@src_dir} -c -o #{obj} #{src_file}"
     end
     return [ obj ]
   end
 
   def arm_assemble(src_file)
     obj = @arm_obj_dir / File.basename(src_file) + ".o"
-    task obj => [@arm_obj_dir, src_file] do
-      sh "#{@arm_assembler} #{@arm_asflags} -I#{@src_dir} -o #{obj} #{src_file}"
+    file obj => [@arm_obj_dir, src_file] do
+      sh "#{@arm_assembler} #{@arm_asflags} -I{@include_dir} -I#{@src_dir} -o #{obj} #{src_file}"
     end
     return [ obj ]
   end
 
   def native_compile(src_file)
     obj = @native_obj_dir / File.basename(src_file) + ".o"
-    task obj => [@native_obj_dir, src_file] do
+    file obj => [@native_obj_dir, src_file] do
       sh "#{@native_compiler} #{@native_cflags} -I#{@src_dir} -c -o #{obj} #{src_file}"
     end
     return [ obj ]
@@ -132,7 +136,7 @@ class Builder
 
   def native_link(test_name, obj_files)
     test_bin = @native_bin_dir / test_name
-    task test_bin => [ @native_bin_dir ] + obj_files do
+    file test_bin => [ @native_bin_dir ] + obj_files do
       sh "#{@native_compiler} -o #{test_bin} #{obj_files.join(" ")}"
     end
     return test_bin
@@ -148,16 +152,17 @@ class KernelBuilder < Builder
     super(module_name)
     @binary       = @build_dir / "kernel.bin"
     @elf_binary   = @build_dir / "kernel.elf"
+    @libs         = ""
   end
 
   def tasks
     super()
-    task @elf_binary => [@arm_bin_dir] + @arm_objs do
+    file @elf_binary => [@arm_bin_dir] + @arm_objs do
       linker_file = @src_dir / "linker.ld"
       sh "mkdir -p #{File.dirname(elf_binary)}"
-      sh "#{@arm_linker} -T #{linker_file} #{@arm_objs.join(" ")} -o #{@elf_binary}"
+      sh "#{@arm_linker} -T #{linker_file} #{@arm_objs.join(" ")} -o #{@elf_binary} -L#{@lib_dir} #{@libs}"
     end
-    task @binary => [ @elf_binary ] do
+    file @binary => [ @elf_binary ] do
       sh "mkdir -p #{File.dirname(binary)}"
       sh "#{@arm_objcopy} #{@elf_binary} -O binary #{@binary}"
     end

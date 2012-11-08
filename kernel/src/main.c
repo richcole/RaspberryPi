@@ -1,4 +1,3 @@
-
 #include "types.h"
 #include "uart.h"
 #include "gio.h"

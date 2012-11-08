@@ -6,6 +6,6 @@ MEMORY
 SECTIONS
 {
     .text : { *(.text*) } > ram
-    .bss : { *(.bss*) *(.rodata) } > ram
+    .bss : { *(.bss*) *(.rodata*) } > ram
 }
 
