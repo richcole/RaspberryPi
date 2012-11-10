@@ -1,5 +1,9 @@
 #include "types.h"
 
+uint32 sp() {
+  return 0;
+}
+
 uint32 c1() {
 }
 

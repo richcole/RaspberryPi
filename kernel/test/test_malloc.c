@@ -20,4 +20,5 @@ void main() {
   for(i=0;i<1024;++i) {
     ptr[i] = malloc_alloc(rand() % 1024);
   }
+  return 0;
 }

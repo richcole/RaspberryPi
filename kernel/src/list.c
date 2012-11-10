@@ -5,7 +5,7 @@ void list_new(struct list_t *lst) {
   lst->head = 0;
 }
 
-void list_add_first(struct list_t *lst, char *elem) {
+void list_add_first(struct list_t *lst, void *elem) {
   struct list_node_t *node = (struct list_node_t *)malloc_alloc(sizeof(struct list_node_t));
   if ( lst->head != 0 ) {
     node->prev = lst->head->prev;
@@ -21,7 +21,7 @@ void list_add_first(struct list_t *lst, char *elem) {
   lst->head = node;
 }
 
-void list_add_last(struct list_t *lst, char *elem) {
+void list_add_last(struct list_t *lst, void *elem) {
   struct list_node_t *node = (struct list_node_t *)malloc_alloc(sizeof(struct list_node_t));
   if ( lst->head != 0 ) {
     node->prev = lst->head->prev;
@@ -49,8 +49,35 @@ struct list_node_t* list_next(struct list_t *lst, struct list_node_t *node) {
   }
 }
 
-char *list_get(struct list_node_t *node) {
+void *list_get(struct list_node_t *node) {
   return node->data;
 }
 
+void list_move_to_end(
+  struct list_t* src, struct list_t* dst, struct list_node_t *node
+) {
+  node->prev->next = node->next;
+  node->next->prev = node->prev;
+  if ( src->head == node ) {
+    if ( node->next != node ) {
+      src->head = node->next;
+    }
+    else {
+      src->head = 0;
+    }
+  }
+  if ( dst->head == 0 ) {
+    dst->head = node;
+    node->next = node->prev = node;
+  }
+  else {
+    node->prev = dst->head->prev;
+    node->next = dst->head;
+    dst->head->prev->next = node;
+    dst->head->prev = node;
+  }
+}
 
+uint32 list_empty(struct list_t *lst) {
+  return lst->head == 0;
+};

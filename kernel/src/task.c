@@ -1,34 +1,35 @@
 #include "task.h"
+#include "list.h"
+#include "malloc.h"
 
-struct task_t {
-  uint32 sp;
-};
+struct list_t* active_tasks;
+struct list_t* inactive_tasks;
+struct list_node_t* current_task_it;
 
-struct task_list_t {
-  struct task_list_t *next;
-  struct task_list_t *prev;
-  struct task_t *task;
-};
+extern uint32 sp();
 
-struct task_list_t *active_tasks = 0;
-struct task_list_t *blocked_tasks = 0;
-struct task_list_t *curr_task = 0;
+void task_init() {
+  active_tasks = (struct list_t *)malloc_alloc(sizeof(struct list_t));
+  list_new(active_tasks);
 
-extern void switch_to(uint32 sp);
-extern uint32 switch_from();
+  inactive_tasks = (struct list_t *)malloc_alloc(sizeof(struct list_t));
+  list_new(inactive_tasks);
 
-void task_set_blocked(struct task_t *task) {
+  struct task_t *task = (struct task_t *)malloc_alloc(sizeof(struct task_t));
+  task->sp    = sp();
+  task->msg   = 0;
+  task->pc    = 0;
+
+  list_add_first(active_tasks, task);
+  current_task_it = list_first(active_tasks); 
 }
 
-void switch_to_next_task(struct task_t *task) {
-  if ( curr_task == 0 || curr_task->next == 0 ) {
-    curr_task = active_tasks;
-  }
-  else {
-    curr_task = curr_task->next;
-  }
-  if ( curr_task != 0 ) {
-    switch_to(curr_task->task->sp);
-  }
+struct task_t *get_current_task() {
+  return (struct task_t *)list_get(current_task_it);
 }
+
+
+
+
+
 

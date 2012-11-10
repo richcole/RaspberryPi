@@ -36,8 +36,8 @@ void malloc_free(char *ptr) {
   malloc_free_list->entries[curr] = entry;
   while( curr != 0 ) {
     if ( 
-	malloc_free_list->entries[curr]->size < 
-	malloc_free_list->entries[parent]->size 
+  	  malloc_free_list->entries[curr]->size < 
+	  malloc_free_list->entries[parent]->size 
     ) {
       malloc_free_list_swap(parent, curr);
       curr = parent;
@@ -71,7 +71,7 @@ void malloc_free_list_remove(uint32 curr) {
   }
 
   uint32 tail = --malloc_free_list->tail;
-  uint32 left = curr*2;
+  uint32 left  = (curr*2)+1;
   uint32 right = left+1;
   malloc_free_list_swap(curr, tail);
 
@@ -84,24 +84,26 @@ void malloc_free_list_remove(uint32 curr) {
       malloc_free_list_swap(right, curr);
       curr = right;
     }
-    left = curr*2;
-    right = left + 1;
+    left  = (curr*2)+1;
+    right = left+1;
   }
 }
 
 char *malloc_alloc_new_entry(uint32 size) {
-  return 0; // FIXME
+  char *ptr = malloc_head;
+  malloc_head += size;
+  return ptr;
 }
 
 char* malloc_alloc(uint32 size) {
   uint32 curr = 0;
   uint32 tail = malloc_free_list->tail;
   while( curr < tail && malloc_free_list->entries[curr]->size < size ) {
-    curr = curr*2;
+    curr = (curr*2)+1;
   }
   if ( curr < tail ) {
     malloc_free_list_remove(curr);
-    return malloc_free_list->entries[malloc_free_list->tail-1]->data;
+    return malloc_free_list->entries[malloc_free_list->tail]->data;
   }
   else {
     return malloc_alloc_new_entry(size);
