@@ -21,7 +21,7 @@ struct malloc_entry_t *malloc_get_entry(char *ptr) {
 void malloc_free_list_swap(uint32 x, uint32 y);
 
 void malloc_init(void *ptr) {
-  uint32 size = 1024;
+  uint32 size = 20480;
   malloc_head = ptr;
   malloc_free_list = (struct malloc_heap_t *) malloc_head;
   malloc_head += sizeof(struct malloc_heap_t) + sizeof(struct malloc_entry_t)*size;
@@ -90,9 +90,10 @@ void malloc_free_list_remove(uint32 curr) {
 }
 
 char *malloc_alloc_new_entry(uint32 size) {
-  char *ptr = malloc_head;
-  malloc_head += size;
-  return ptr;
+  struct malloc_entry_t *entry = (struct malloc_entry_t *)malloc_head;
+  malloc_head += size + sizeof(struct malloc_entry_t);
+  entry->size = size;
+  return entry->data;
 }
 
 char* malloc_alloc(uint32 size) {
@@ -110,4 +111,6 @@ char* malloc_alloc(uint32 size) {
   }
 }
 
-
+uint32 malloc_freelist_length() {
+  return malloc_free_list->tail;
+}

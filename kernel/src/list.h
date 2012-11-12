@@ -6,15 +6,15 @@
 struct list_t;
 struct list_node_t;
 
-struct list_t {
+typedef struct list_t {
   struct list_node_t *head;
-};
+} list_t;
 
-struct list_node_t {
+typedef struct list_node_t {
   struct list_node_t *prev;
   struct list_node_t *next;
   char *data;
-};
+} list_node_t;
 
 void list_new(struct list_t *lst);
 void list_add_first(struct list_t *lst, void *elem);

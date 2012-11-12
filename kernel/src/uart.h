@@ -20,9 +20,6 @@ struct uart_t {
   uint32 baud;     // 68
 };
 
-extern struct uart_t volatile *uart;
-extern uint32 uart_intr;
-
 void uart_init();
 void print_buf(char *buf);
 void print_ch(char ch);

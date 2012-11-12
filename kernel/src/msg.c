@@ -1,13 +1,13 @@
-#include "buf.h"
+#include "msg.h"
 #include "malloc.h"
 
-void buf_new(struct buf_t *buf, uint32 size, uint32 type) {
+void msg_new(struct msg_t *buf, uint32 size, uint32 type) {
   buf->data = malloc_alloc(size);
   buf->size = size;
   buf->type = type;
 }
 
-void buf_move(struct buf_t *src, struct buf_t *dst) {
+void msg_move(struct msg_t *src, struct msg_t *dst) {
   if ( dst->data != 0 ) {
     malloc_free(dst->data);
   }

@@ -5,6 +5,7 @@ uint32 sp() {
 }
 
 uint32 c1() {
+  return 0;
 }
 
 uint32 cpsr() {

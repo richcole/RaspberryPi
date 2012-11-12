@@ -17,4 +17,6 @@ extern struct list_t* active_tasks;
 extern struct list_t* inactive_tasks;
 extern struct list_node_t* current_task_it;
 
+typedef void (task_func_t)();
+
 #endif

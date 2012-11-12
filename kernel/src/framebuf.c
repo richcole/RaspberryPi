@@ -2,7 +2,6 @@
 #include "uart.h"
 
 struct framebuf_info_t volatile framebuf_info __attribute__((aligned (16)));
-unsigned char volatile *framebuf_ptr = 0;
 
 struct mailbox_t volatile *mailbox = (struct mailbox_t *)0x2000B880;
 uint32 status_full  = 0x1 << 31;
@@ -35,12 +34,12 @@ void framebuf_init() {
   framebuf_info.ptr = 0;
   framebuf_info.size = 0;
 
-  print_buf("Write to Mailbox\n");
-
   mailbox_write(1, ((uint32)&framebuf_info) + 0x40000000);
   mailbox_read(1);
-  framebuf_ptr = (unsigned char *)framebuf_info.ptr;
+};
 
+void draw_pattern() {
+  uint8 volatile* ptr = framebuf_ptr();
   int x, y;
   uint32 width = framebuf_info.width;
   uint32 height = framebuf_info.height;
@@ -48,10 +47,21 @@ void framebuf_init() {
   uint32 depth = framebuf_info.depth / 8;
   for(y=0;y<height;++y) {
     for(x=0;x<width;++x) {
-      framebuf_ptr[(y*pitch)+(x*depth)+0] = y;
-      framebuf_ptr[(y*pitch)+(x*depth)+1] = x;
-      framebuf_ptr[(y*pitch)+(x*depth)+2] = x+y;
+      ptr[(y*pitch)+(x*depth)+0] = y;
+      ptr[(y*pitch)+(x*depth)+1] = x;
+      ptr[(y*pitch)+(x*depth)+2] = x+y;
     }
   }
 };
-  
+
+uint8 volatile* framebuf_ptr() {
+  return (uint8 volatile*)framebuf_info.ptr;
+}
+
+uint32 framebuf_depth() {
+  return framebuf_info.depth / 8;
+}
+
+uint32 framebuf_pitch() {
+  return framebuf_info.pitch;
+}

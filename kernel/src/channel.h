@@ -9,7 +9,7 @@ struct channel_t {
   struct list_t *output_tasks;
 };
 
-void channel_send(struct channel_t *ch, struct buf_t *msg);
-void channel_recv(struct channel_t *ch, struct buf_t *msg);
+void channel_send(struct channel_t *ch, struct msg_t *msg);
+void channel_recv(struct channel_t *ch, struct msg_t *msg);
 
 #endif
