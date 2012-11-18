@@ -154,8 +154,7 @@ void reply_processor_handler(
 
   if ( p->state > 0 ) {
     if ( p->head + buf_len >= (signed int) sizeof(p->buf)-1 ) {
-      fprintf(stderr, "Overflow\n");
-      exit(-1);
+      fprintf(stderr, "Overflow %d\n", buf_len);
     }
     memmove(p->buf + p->head, buf, buf_len);
     p->head += buf_len;
@@ -202,8 +201,8 @@ void pipe_processor_handler(
 
   if ( p->state == 0 ) {
     if ( p->head + buf_len >= (signed int) sizeof(p->buf)-1 ) {
-      fprintf(stderr, "Overflow\n");
-      exit(-1);
+      fprintf(stderr, "Overflow %d \n", buf_len);
+      return;
     }
     memmove(p->buf + p->head, buf, buf_len);
     p->head += buf_len;

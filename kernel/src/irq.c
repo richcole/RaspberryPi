@@ -14,4 +14,5 @@ void c_irq_handler() {
       print_ch(x);
     }
   }
+  print_buf("ok\n");
 }

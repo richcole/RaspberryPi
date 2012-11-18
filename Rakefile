@@ -5,7 +5,7 @@ class String
 end
 
 class Builder
-  include Rake::DSL
+#  include Rake::DSL
 
   attr_accessor :build, :tests, :clean, :binary, :default
 
@@ -201,7 +201,7 @@ task :default => builders.map { |x| x.default }.flatten
 
 task :bootstrap do
   sh "sudo adduser $USER dialout"
-  sh "sudo apt-get install gcc-4.4-arm-linux-gnueabi"
+  sh "sudo apt-get install gcc-4.4-arm-linux-gnueabi lrzsz"
 end
 
 task :run => :helloworld

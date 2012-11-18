@@ -24,12 +24,13 @@ void malloc_init(void *ptr) {
   uint32 size = 20480;
   malloc_head = ptr;
   malloc_free_list = (struct malloc_heap_t *) malloc_head;
-  malloc_head += sizeof(struct malloc_heap_t) + sizeof(struct malloc_entry_t)*size;
+  malloc_head += sizeof(struct malloc_heap_t) + 
+    sizeof(struct malloc_entry_t)*size;
   malloc_free_list->size = size;
   malloc_free_list->tail = 0;
 }
 
-void malloc_free(char *ptr) {
+void malloc_free(void *ptr) {
   struct malloc_entry_t *entry = malloc_get_entry(ptr);
   uint32 curr = malloc_free_list->tail++;
   uint32 parent = curr / 2;

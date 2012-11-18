@@ -18,7 +18,7 @@ int main() {
     }
   }
 
-  for(j=0;j<100000;++j) {
+  for(j=0;j<1000;++j) {
     for(k=0;k<2;k++) {
       for(i=0;i<1024;++i) {
         ptr[k][i] = malloc_alloc((rand() % 1024)+1);

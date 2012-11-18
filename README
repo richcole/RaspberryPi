@@ -23,7 +23,15 @@ had a berriboot SD card.
 
 === Bootstrap your Linux desktop for development
 
-Execute 
+First add the following to /etc/apt/sources.list
+
+  deb http://www.emdebian.org/debian/ squeeze main
+
+Then execute
+
+  sudo apt-get update
+
+Next execute 
 
   sudo apt-get install rake
   rake bootstrap

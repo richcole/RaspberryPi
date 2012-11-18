@@ -26,32 +26,28 @@ irq_handler:        .word irq
 fiq_handler:        .word hang
 
 reset:
+    /* copy reset vectors */
     mov r0,#0x8000
     mov r1,#0x0000
-    ldmia r0!,{r2,r3,r4,r5,r6,r7,r8,r9}
-    stmia r1!,{r2,r3,r4,r5,r6,r7,r8,r9}
-    ldmia r0!,{r2,r3,r4,r5,r6,r7,r8,r9}
-    stmia r1!,{r2,r3,r4,r5,r6,r7,r8,r9}
+    ldmia r0!,{r2-r9}
+    stmia r1!,{r2-r9}
+    ldmia r0!,{r2-r9}
+    stmia r1!,{r2-r9}
 
-
-    ;@ (PSR_IRQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
-    mov r0,#0xD2
-    msr cpsr_c,r0
-    mov sp,#0x8000
-
-    ;@ (PSR_FIQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+    /* (PSR_FIQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
     mov r0,#0xD1
     msr cpsr_c,r0
     mov sp,#0x4000
 
-    ;@ (PSR_SVC_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+    /* (PSR_IRQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
+    mov r0,#0xD2
+    msr cpsr_c,r0
+    mov sp,#0x8000
+
+    /* (PSR_SVC_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
     mov r0,#0xD3
     msr cpsr_c,r0
     mov sp,#0x8000000
-
-    ;@ SVC MODE, IRQ ENABLED, FIQ DIS
-    ;@mov r0,#0x53
-    ;@msr cpsr_c, r0
 
     bl notmain
 
@@ -85,36 +81,44 @@ FUNC enable_irq
     msr cpsr_c,r0
     bx lr
 
-FUNC sp
-    mov r0,sp
-
-irq:
-    push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-    bl c_irq_handler
-    pop  {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-    sub  lr,lr,#4
-    subs pc,=task_yield
-
-task_create:
-    mov r3,sp
-    mov sp,r0
-    mov r0,r1
-    push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12}
-    push =task_func
-    mov sp,r3
+FUNC disable_irq
+    mrs r0,cpsr
+    orr r0,r0,#0x80
+    msr cpsr_c,r0
     bx lr
 
-FUNC switch_to
-    push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+FUNC sp
+    mov r0,sp
+    bx lr
+
+irq:
+    sub   lr,lr,#4
+    str   r0,[sp,#-8]
+    ldr   r0,=task_yield
+    str   r0,[sp,#-4]
+    sub   sp,sp,#8
+    push  {r1-r12,lr}
+    bl    c_irq_handler
+    pop   {r0-r12,lr}
+    ldmfd sp!,{pc}^
+
+/* task_create(void **sp, void *lr) */
+FUNC task_create
+    push {r2}
+    ldr  r2, [r0]
+    stmfd r2!, {r0,r1}
+    stmfd r2!, {r2-r12}
+    stmfd r2!, {r1}
+    str r2, [r0]
+    pop {r2}
+    bx lr
+
+FUNC task_switch
+    push {r0-r12,lr}
     str  sp,[r0]
     mov  sp,r1
-    pop  {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-    subs pc,lr,#4
-
-FUNC switch_to_no_save
-    mov  sp,r0
-    pop  {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-    subs pc,lr,#4
+    pop  {r0-r12,lr}
+    subs pc,lr,#0
 
 FUNC spsr
     mrs r0,spsr

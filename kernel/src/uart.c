@@ -50,9 +50,10 @@ void print_buf(char *buf) {
 void print_ch(char ch) {
   while((uart->lsr&0x20) == 0);
   uart->io = ch;
+  while((uart->lsr&0x20) == 0);
 }
 
-void print_hex(uint32 p) {
+uint32 print_hex(uint32 p) {
   int i;
   uint32 c;
   print_ch('0');
@@ -66,15 +67,35 @@ void print_hex(uint32 p) {
       print_ch('A' + c - 10);
     }
   };
+  return p;
 }
 
-void print_addresses_neq(uint32 p, uint32 volatile *q, char *name) {
-  print_hex(p);
+void volatile* print_ptr(void volatile* p) {
+  int i;
+  uint32 c;
+  int len = sizeof(p) * 2;
+  unsigned long l = (unsigned long)p;
+  print_ch('0');
+  print_ch('x');
+  for(i=0;i<len;++i) {
+    c = ((l>>((len-i-1)*4))&0xf);
+    if ( c < 10 ) {
+      print_ch('0' + c);
+    }
+    else {
+      print_ch('A' + c - 10);
+    }
+  };
+  return p;
+}
+
+void print_addresses_neq(void *p, void volatile *q, char *name) {
+  print_ptr(p);
   print_ch(' ');
-  print_hex((uint32)q);
+  print_ptr(q);
   print_ch(' ');
   print_buf(name);
-  if ( p != (uint32)q ) {
+  if ( p != q ) {
     print_buf(" NOT EQUAL");
   }
   print_buf("\n");

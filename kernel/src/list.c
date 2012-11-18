@@ -1,5 +1,6 @@
 #include "list.h"
 #include "malloc.h"
+#include "uart.h"
 
 void list_new(struct list_t *lst) {
   lst->head = 0;
@@ -32,6 +33,7 @@ void list_add_last(struct list_t *lst, void *elem) {
   else {
     node->prev = node;
     node->next = node;
+    lst->head = node;
   }
   node->data = elem;
 }
@@ -76,6 +78,20 @@ void list_move_to_end(
     dst->head->prev->next = node;
     dst->head->prev = node;
   }
+}
+
+void list_remove(struct list_t *lst, struct list_node_t *node) {
+  if ( node->next == node ) {
+    lst->head = 0;
+  }
+  else {
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
+    if ( lst->head == node ) {
+      lst->head = node->next;
+    }
+  }
+  malloc_free(node);
 }
 
 uint32 list_empty(struct list_t *lst) {

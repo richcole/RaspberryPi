@@ -20,10 +20,13 @@ struct uart_t {
   uint32 baud;     // 68
 };
 
+extern struct uart_t volatile *uart;
+
 void uart_init();
 void print_buf(char *buf);
 void print_ch(char ch);
-void print_hex(uint32 p);
-void print_addresses_neq(uint32 p, uint32 volatile *q, char *name);
+uint32 print_hex(uint32 p);
+void volatile* print_ptr(void volatile* p);
+void print_addresses_neq(void *p, void volatile *q, char *name);
 
 #endif

@@ -2,7 +2,7 @@
 #include "list.h"
 #include "task.h"
 
-extern void switch_to(uint32 *from_sp_ptr, uint32 to_sp);
+extern void switch_to(void **from_sp_ptr, void *to_sp);
 
 void channel_transfer_to_output(
   struct task_t *current_task, 
@@ -13,8 +13,8 @@ void channel_transfer_to_output(
   struct task_t *output_task = (struct task_t *)list_get(output_task_it);
   list_move_to_end(ch->output_tasks, active_tasks, output_task_it);
   msg_move(current_task->msg, output_task->msg);
-  current_task_it = otuput_task_it;
-  switch_to(&current_task->sp, output_task->sp);
+  current_task_it = output_task_it;
+  task_switch(&current_task->sp, output_task->sp);
 }
 
 void channel_transfer_to_input(
