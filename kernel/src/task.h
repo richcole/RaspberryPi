@@ -6,7 +6,7 @@
 #include "list.h"
 
 typedef struct task_t {
-  void* sp;
+  uint32* sp;
   struct msg_t  *msg;
 } task_t;
 

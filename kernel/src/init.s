@@ -36,17 +36,17 @@ reset:
 
     /* (PSR_FIQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
     mov r0,#0xD1
-    msr cpsr_c,r0
+    msr cpsr,r0
     mov sp,#0x4000
 
     /* (PSR_IRQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
     mov r0,#0xD2
-    msr cpsr_c,r0
+    msr cpsr,r0
     mov sp,#0x8000
 
     /* (PSR_SVC_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
     mov r0,#0xD3
-    msr cpsr_c,r0
+    msr cpsr,r0
     mov sp,#0x8000000
 
     bl notmain
@@ -56,14 +56,14 @@ FUNC hang
 
 FUNC PUT32
     str r1,[r0]
-    bx lr
+    bx  lr
 
 FUNC GET32
     ldr r0,[r0]
-    bx lr
+    bx  lr
 
 FUNC dummy 
-    bx lr
+    bx  lr
 
 FUNC flush_cache
     mov r0, #0x0000
@@ -78,66 +78,92 @@ FUNC memory_barrier
 FUNC enable_irq
     mrs r0,cpsr
     bic r0,r0,#0x80
-    msr cpsr_c,r0
-    bx lr
+    msr cpsr,r0
+    bx  lr
 
 FUNC disable_irq
     mrs r0,cpsr
     orr r0,r0,#0x80
-    msr cpsr_c,r0
-    bx lr
+    msr cpsr,r0
+    bx  lr
 
 FUNC sp
     mov r0,sp
-    bx lr
-
-irq:
-    sub   lr,lr,#4
-    str   r0,[sp,#-8]
-    ldr   r0,=task_yield
-    str   r0,[sp,#-4]
-    sub   sp,sp,#8
-    push  {r1-r12,lr}
-    bl    c_irq_handler
-    pop   {r0-r12,lr}
-    ldmfd sp!,{pc}^
+    bx  lr
 
 /* task_create(void **sp, void *lr) */
 FUNC task_create
-    push {r2}
+    push {r2,r3}
     ldr  r2, [r0]
-    stmfd r2!, {r0,r1}
+    stmfd r2!, {r0-r1}
     stmfd r2!, {r2-r12}
     stmfd r2!, {r1}
+    stmfd r2!, {r1}
+    mrs   r3,cpsr
+    stmfd r2!, {r3}
     str r2, [r0]
-    pop {r2}
-    bx lr
+    pop {r2,r3}
+    bx  lr
 
+irq:
+    sub    lr,lr,#4
+    push   {r6,r7,lr}
+    push   {r0-r5}
+    bl     c_irq_handler
+    mov    r6,sp
+    mrs    r7,spsr
+    orr    r7,r7,#0x80
+    msr    cpsr,r7
+    ldmfd  r6!,{r0-r5}
+    push   {r0-r5}
+    ldmfd  r6!,{r0,r1,r2}
+    push   {r0,r1}
+    push   {r8-r12,lr}
+    push   {r2}
+    /* push the status register */
+    push   {r7}
+    mov    r0,sp
+    b      task_yield_from_irq
+
+/* task_switch(uint32 **sp, uint32 *new_sp) */
 FUNC task_switch
+    /* save current state */
     push {r0-r12,lr}
+    push {lr}
+    mrs  r2,cpsr
+    push {r2}
     str  sp,[r0]
-    mov  sp,r1
-    pop  {r0-r12,lr}
-    subs pc,lr,#0
+    /* switch to new stack */
+    mov  r0,r1
+    /* continue on to task_switch_no_save */
+
+FUNC task_switch_no_save
+    mov    sp,r0
+    pop    {r0}
+    /* enable interrupts */
+    bic    r0,r0,#0x80
+    msr    spsr,r0
+    /* pop state and jump */
+    ldmfd  sp!,{r0-r12,lr,pc}^
 
 FUNC spsr
     mrs r0,spsr
-    bx lr
+    bx  lr
 
 FUNC set_if_zero
     ldrex r2, [r0]
     cmp r2, #0
     strexeq r3, r1, [r0]
     mov r0, r3
-    bx lr
+    bx  lr
 
 FUNC cpsr
     mrs r0,cpsr
-    bx lr
+    bx  lr
 
 FUNC c1
     mrc p15,0,r0,c1,c0,1
-    bx lr
+    bx  lr
 
 heap_end_ptr:                       .word
 heap_start_ptr:                     .word   
