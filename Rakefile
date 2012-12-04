@@ -17,8 +17,9 @@ class Builder
     @arm_cflags    = "-O2 -Wall -nostdlib -nostartfiles -ffreestanding"
     @arm_ldflags   = "-Wall -m32"
 
-    @arm_arch     = "arm-linux-gnueabi"
-    # @arm_arch       = "arm-none-eabi"
+    @arm_arch       = "arm-linux-gnueabi"
+    # @arm_arch     = "arm-none-eabi"
+    @arm_objdump    = @arm_arch + "-objdump"
     @arm_objcopy    = @arm_arch + "-objcopy"
     @arm_compiler   = @arm_arch + "-gcc"
     @arm_linker     = @arm_arch + "-ld"
@@ -36,6 +37,7 @@ class Builder
     @build_dir      = @build_dir / @module_name
     @proj_dir       = @proj_dir  / @module_name
     @src_dir        = @proj_dir  / "src"
+    @ld_dir        = @proj_dir   / "linker"
     @test_dir       = @proj_dir  / "test"
 
     @include_dir    = @proj_dir  / "include"
@@ -155,19 +157,37 @@ class KernelBuilder < Builder
     @libs         = ""
   end
 
+  def pi_binary
+    @build_dir / "kernel.bin.pi.ld"
+  end
+
+  def qemu_binary
+    @build_dir / "kernel.bin.qemu.ld"
+  end
+
   def tasks
     super()
-    file @elf_binary => [@arm_bin_dir] + @arm_objs do
-      linker_file = @src_dir / "linker.ld"
-      sh "mkdir -p #{File.dirname(elf_binary)}"
-      sh "#{@arm_linker} -T #{linker_file} #{@arm_objs.join(" ")} -o #{@elf_binary} -L#{@lib_dir} #{@libs}"
+    for ld_file in Dir.glob(File.join(@ld_dir, "*.ld")) do
+      link_kernel(ld_file)
     end
-    file @binary => [ @elf_binary ] do
-      sh "mkdir -p #{File.dirname(binary)}"
-      sh "#{@arm_objcopy} #{@elf_binary} -O binary #{@binary}"
-    end
+  end
 
-    @default << @elf_binary << @binary
+  def link_kernel(ld_file)
+    this_elf_binary = @elf_binary + "." + File.basename(ld_file)
+    this_binary = @binary + "." + File.basename(ld_file)
+    this_binary_dump = this_binary + ".dump"
+    file this_elf_binary => [@arm_bin_dir, ld_file] + @arm_objs do
+      sh "mkdir -p #{File.dirname(elf_binary)}"
+      sh "#{@arm_linker} -T #{ld_file} #{@arm_objs.join(" ")} -o #{this_elf_binary} -L#{@lib_dir} #{@libs}"
+    end
+    file this_binary => [ this_elf_binary ] do
+      sh "mkdir -p #{File.dirname(binary)}"
+      sh "#{@arm_objcopy} #{this_elf_binary} -O binary #{this_binary}"
+    end
+    file this_binary_dump => [ this_binary ] do
+      sh "#{@arm_objdump} -d #{this_elf_binary} > #{this_binary}.dump"
+    end
+    @default << this_elf_binary << this_binary << this_binary_dump
   end
 
 end
@@ -211,7 +231,11 @@ task :helloworld => [k1.binary, s.binary] do
 end
 
 task :run_kernel => [k2.binary, s.binary] do
-  sh "#{s.binary} bootload #{k2.binary} #{device}"
+  sh "#{s.binary} bootload #{k2.pi_binary} #{device}"
+end
+
+task :qemu_kernel => [k2.binary, s.binary] do
+  sh "qemu-system-arm -M versatilepb -m 128M -nographic -kernel #{k2.qemu_binary} -s -S"
 end
 
 task :kernel => [k2.binary, s.binary] 

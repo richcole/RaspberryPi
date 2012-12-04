@@ -29,4 +29,6 @@ uint32 print_hex(uint32 p);
 void volatile* print_ptr(void volatile* p);
 void print_addresses_neq(void *p, void volatile *q, char *name);
 
+extern uint32 uart_intr;
+
 #endif

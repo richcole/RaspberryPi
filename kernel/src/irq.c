@@ -1,17 +1,31 @@
 #include "irq.h"
 #include "uart.h"
+#include "timer.h"
 
-uint32 volatile *irq_enable  = (unsigned int *)0x2000B210;
-uint32 volatile *irq_disable = (unsigned int *)0x2000B21C;
+struct irq_t volatile *irq = (struct irq_t volatile *) 0x2000B200;
 
-void c_irq_handler() {
+uint32 c_irq_handler() {
   unsigned int rb;
   unsigned int x;
 
-  while(((rb = uart->iir)&0x1) == 0) {
-    if ((rb&0x6)==4) {
-      x = uart->io;
-      print_ch(x);
+  print_buf("intr pending=");
+  print_hex(irq->pending[0]);
+  print_buf("\n");
+
+  if ( irq->pending[0] & uart_intr ) {
+    while(((rb = uart->iir)&0x1) == 0) {
+      if ((rb&0x6)==4) {
+        x = uart->io;
+        print_ch(x);
+      }
     }
   }
+
+  if ( irq->pending[0] & timer_intr ) {
+    timer_clear();
+    timer_next();
+    return 1;
+  }
+
+  return 0;
 }

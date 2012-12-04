@@ -7,6 +7,7 @@
 #include "malloc.h"
 #include "channel.h"
 #include "font.h"
+#include "timer.h"
 
 void task2() {
   while(1) {
@@ -25,6 +26,7 @@ int notmain ( void )
   malloc_init((void *)0x30000);
   framebuf_init();
   task_init();
+  timer_init();
   enable_irq();
 
   print_buf("\n Initialization complete.\n");

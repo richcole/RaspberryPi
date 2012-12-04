@@ -8,7 +8,7 @@ uint32 uart_intr = 0x1 << 29;
 
 void uart_init() {
 
-  *irq_disable = uart_intr;
+  irq->disable[0] = uart_intr;
 
   uart->enable = 0x1;
   uart->ier    = 0;
@@ -37,7 +37,7 @@ void uart_init() {
   // turn on the uart for send and receive
   uart->cntl     = 3;
 
-  *irq_enable = uart_intr;
+  irq->enable[0] = uart_intr;
 };
 
 void print_buf(char *buf) {

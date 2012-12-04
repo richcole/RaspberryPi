@@ -6,7 +6,7 @@
 \name:
 .endm
 
-FUNC _start
+start:
     ldr pc,reset_handler
     ldr pc,undefined_handler
     ldr pc,swi_handler
@@ -27,27 +27,28 @@ fiq_handler:        .word hang
 
 reset:
     /* copy reset vectors */
-    mov r0,#0x8000
+    ldr r0,=start
     mov r1,#0x0000
     ldmia r0!,{r2-r9}
     stmia r1!,{r2-r9}
     ldmia r0!,{r2-r9}
     stmia r1!,{r2-r9}
 
-    /* (PSR_FIQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
+set_stacks:  
+    /* firq */   
     mov r0,#0xD1
     msr cpsr,r0
-    mov sp,#0x4000
+    mov sp,#0x38000
 
-    /* (PSR_IRQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
+    /* irq */
     mov r0,#0xD2
     msr cpsr,r0
-    mov sp,#0x8000
+    mov sp,#0x40000
 
-    /* (PSR_SVC_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS) */
+    /* supervisor */
     mov r0,#0xD3
     msr cpsr,r0
-    mov sp,#0x8000000
+    mov sp,#0x48000
 
     bl notmain
 
@@ -106,45 +107,48 @@ FUNC task_create
     bx  lr
 
 irq:
-    sub    lr,lr,#4
-    push   {r6,r7,lr}
-    push   {r0-r5}
+    push   {lr}
     bl     c_irq_handler
-    mov    r6,sp
-    mrs    r7,spsr
-    orr    r7,r7,#0x80
-    msr    cpsr,r7
-    ldmfd  r6!,{r0-r5}
-    push   {r0-r5}
-    ldmfd  r6!,{r0,r1,r2}
-    push   {r0,r1}
-    push   {r8-r12,lr}
-    push   {r2}
-    /* push the status register */
-    push   {r7}
+    pop    {lr}
+    teq    r0,#0
+    subeqs pc,r14,#4
+
+task_switch_irq:
+    sub    lr,lr,#4
+    push   {r0,r1,r2}
+    push   {lr}
+    mov    r0,sp            /* save stack            */
+    mrs    r1,spsr          /* swap to previous mode (FIXME user mode) */
+    orr    r1,r1,#0x80      /*   with interupts off  */
+    msr    cpsr,r1
+    ldmfd  r0!,{r2}         /* load lr into r2 */
+    push   {r2}             /* save pc */
+    push   {r2}             /* save lr */
+    push   {r3-r12}         /* save r3-r12 */
+    ldmfd  r0!,{r2,r3,r4}   /* load r0,r1,r2 */
+    push   {r2,r3,r4}       /* save r0,r1,r2 */
+    push   {r1}             /* save cspr */
     mov    r0,sp
     b      task_yield_from_irq
 
 /* task_switch(uint32 **sp, uint32 *new_sp) */
 FUNC task_switch
     /* save current state */
-    push {r0-r12,lr}
-    push {lr}
-    mrs  r2,cpsr
-    push {r2}
-    str  sp,[r0]
-    /* switch to new stack */
-    mov  r0,r1
+    push {lr}             /* save pc            */
+    push {r0-r12,lr}      /* save lr down to r0 */
+    mrs  r2,cpsr          
+    push {r2}             /* save cspr          */
+    str  sp,[r0]          /* save sp in task    */
+    mov  r0,r1            /* switch to new stack */
     /* continue on to task_switch_no_save */
 
+/* task_switch_no_save(uint32 *sp) */
 FUNC task_switch_no_save
     mov    sp,r0
     pop    {r0}
-    /* enable interrupts */
-    bic    r0,r0,#0x80
+    bic    r0,r0,#0x80             /* enable interrupts */
     msr    spsr,r0
-    /* pop state and jump */
-    ldmfd  sp!,{r0-r12,lr,pc}^
+    ldmfd  sp!,{r0-r12,lr,pc}^     /* pop state and jump */
 
 FUNC spsr
     mrs r0,spsr

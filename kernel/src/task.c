@@ -70,8 +70,8 @@ void task_yield() {
   struct task_t *next_task = (struct task_t *)next_task_it->data;
   current_task_it = next_task_it;
 
-  print_buf("task_yield next_task->sp[-1]=");
-  print_hex(next_task->sp[-1]);
+  print_buf("task_yield next_task->sp[15]=");
+  print_hex(next_task->sp[15]);
   print_buf("\n");
 
   task_switch(&current_task->sp, next_task->sp);
@@ -87,10 +87,12 @@ void task_yield_from_irq(uint32 *sp) {
 
   print_buf("task_yield_from_irq sp=");
   print_ptr(sp);
-  print_buf(" sp[-1]=");
-  print_hex(sp[-1]);
-  print_buf(" next_task->sp[-1]=");
-  print_hex(next_task->sp[-1]);
+  print_buf(" sp[15]=");
+  print_hex(sp[15]);
+  print_buf(" sp[19]=");
+  print_hex(sp[19]);
+  print_buf(" next_task->sp[15]=");
+  print_hex(next_task->sp[15]);
   print_buf("\n");
 
   task_switch_no_save(next_task->sp);
