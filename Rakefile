@@ -1,113 +1,245 @@
-#!/usr/bin/rake
-
-require 'fileutils'
+class String
+  def /(other)
+    File.join(self, other)
+  end
+end
 
 class Builder
-  attr_reader :proj_dir, :build_dir, :src_dir, :obj_dir
-  attr_reader :tool_dir, :tool_lib, :qemu_dir
-  attr_reader :arch, :cpu, :platform
-  attr_reader :includes, :flags, :c_flags, :as_flags, :src_dirs
-  attr_reader :cc, :as, :ld, :objcopy
+#  include Rake::DSL
 
-  def initialize
-    @arch      = "arm-none-eabi"
-    @platform  = "qemu"
-    @qemu_dir  = "/home/richcole/raspberry-pi/raspidev/bin"
-    @tool_dir  = "/home/richcole/raspberry-pi/raspidev/arm-2011.03/bin"
-    @tool_lib  = "/home/richcole/raspberry-pi/raspidev/arm-2011.03/lib/gcc/arm-none-eabi/4.5.2/libgcc.a"
+  attr_accessor :build, :tests, :clean, :binary, :default
+
+  def initialize(module_name)
     @proj_dir  = FileUtils.pwd
-    @build_dir = proj_dir  + "/build"
-    @src_dir   = proj_dir  + "/src"
-    @obj_dir   = build_dir + "/obj"
-    @as        = @tool_dir + "/" + arch + "-as"
-    @cc        = @tool_dir + "/" + arch + "-gcc"
-    @ld        = @tool_dir + "/" + arch + "-ld"
-    @objcopy   = @tool_dir + "/" + arch + "-objcopy"
-    @cpu       = "arm1176jzf-s"
-    @src_dirs  = [src_dir, src_dir + "/" + platform, src_dir + "/lib", src_dir + "/lambda"]
-    @includes  = @src_dirs.map { |x| "-I#{x}" }.join(" ")
-    @flags     = "#{includes} -g -mcpu=#{cpu}"
-    @c_flags   = "#{flags} -DPLATFORM=#{platform}"
-    @as_flags  = "#{flags}"
-  end
+    @build_dir = @proj_dir / "build"
 
-  def run_as(src_file)
-    obj_file = obj_dir + "/" + File.basename(src_file).gsub(".s", ".o")
-    file(obj_file => [ src_file, obj_dir, build_dir ]) do 
-      run "#{as} #{as_flags} -o #{obj_file} #{src_file}"
-    end
-    obj_file
-  end
+    @arm_asflags   = "--warn --fatal-warnings -mcpu=arm1176jzf-s -march=armv6"
+    @arm_cflags    = "-O2 -Wall -nostdlib -nostartfiles -ffreestanding"
+    @arm_ldflags   = "-Wall -m32"
 
-  def run_cc(src_file)
-    obj_file = obj_dir + "/" + File.basename(src_file).gsub(".c", ".o")
-    file(obj_file => [ src_file, obj_dir, build_dir ]) do 
-      run "#{cc} -c #{c_flags} -O0 -Werror -std=c99 -mcpu=#{cpu} " + 
-        "-o #{obj_file} #{src_file}"
-    end
-    obj_file
-  end
+    @arm_arch       = "arm-linux-gnueabi"
+    # @arm_arch     = "arm-none-eabi"
+    @arm_objdump    = @arm_arch + "-objdump"
+    @arm_objcopy    = @arm_arch + "-objcopy"
+    @arm_compiler   = @arm_arch + "-gcc"
+    @arm_linker     = @arm_arch + "-ld"
+    @arm_assembler  = @arm_arch + "-as"
 
-  def build_kernel_elf_image(ld_file, obj_files, kernel_file)
-    kernel_elf_image = kernel_file + ".elf"
-    deps = [ld_file, build_dir] + obj_files
-    file(kernel_elf_image => deps) do
-      ld_flags = "-nostdlib -static --error-unresolved-symbols"
-      run "#{ld} #{ld_flags} -T #{ld_file} #{obj_files.join(" ")} " + 
-        "-o #{kernel_elf_image} #{tool_lib}"
-      run "#{objcopy} -O binary #{kernel_elf_image} #{kernel_image}"
-    end
-    kernel_elf_image
-  end
+    @native_cflags  = "-Wall -ggdb"
+    @native_asflags = ""
+    @native_ldflags = ""
 
-  def build_kernel_image(kernel_file, kernel_elf_image)
-    kernel_image = kernel_file + ".img"
-    file(kernel_image => kernel_elf_image) do
-      run "#{objcopy} -O binary #{kernel_elf_image} #{kernel_image}"
-    end
-    kernel_image
+    @native_objcopy    = "objcopy"
+    @native_compiler   = "gcc"
+    @native_linker     = "ld"
+
+    @module_name    = module_name
+    @build_dir      = @build_dir / @module_name
+    @proj_dir       = @proj_dir  / @module_name
+    @src_dir        = @proj_dir  / "src"
+    @ld_dir         = @proj_dir  / "linker"
+    @test_dir       = @proj_dir  / "test"
+
+    @include_dir    = @proj_dir  / "include"
+    @lib_dir        = @proj_dir  / "lib"
+    @libs           = ""
+
+    @arm_obj_dir    = @build_dir / "obj" / "arm"
+    @arm_bin_dir    = @build_dir / "bin" / "arm"
+    @arm_objs       = []
+
+    @native_obj_dir = @build_dir / "obj" / "native"
+    @native_bin_dir = @build_dir / "bin" / "native"
+    @native_objs    = []
+
+    directory @arm_bin_dir
+    directory @arm_obj_dir
+    directory @native_bin_dir
+    directory @native_obj_dir
+
+    @tests          = []
   end
 
   def tasks
-    directory build_dir 
-    directory obj_dir
+    directory @native_obj_dir
+    directory @native_bin_dir
+    directory @arm_bin_dir
+    directory @native_bin_dir
 
-    task :clean do
-      clean
+    @default = []
+    @arm_objs = []
+    Dir.glob(@src_dir / "*.s").each do |src_file| 
+      @arm_objs += arm_assemble(src_file)
+    end
+    each_file(@src_dir, "*.cpp", "*.c") do |src_file|
+      @arm_objs += arm_compile(src_file)
     end
 
-    obj_files = []
-    for sdir in src_dirs do
-      for sfile in Dir.glob("#{sdir}/*.s") do
-        obj_files << run_as(sfile)
-      end
-      for sfile in Dir.glob("#{sdir}/*.c") do
-        obj_files << run_cc(sfile)
-      end
+    @native_objs = []
+    each_file(@src_dir, "*.c") do |src_file|
+      @native_objs += native_compile(src_file)
     end
-    kernel_file = build_dir + "/kernel"
-    kernel_elf_image = build_kernel_elf_image("#{src_dir}/kernel.ld", obj_files, kernel_file)
-    kernel_image = build_kernel_image(kernel_file, kernel_elf_image)
-    task :default => kernel_elf_image
-    task :run => run_kernel(kernel_elf_image)
-  end
 
-  def run_kernel(kernel_image)
-    task :run_kernel => [ kernel_image ] do
-      run "#{qemu_dir}/qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel #{kernel_image} -nographic"
+    @tests = []
+    @test_objs = []
+    each_file(@test_dir, "*.c") do |src_file|
+      @test_objs += native_compile(src_file)
+    end
+    Dir.glob(@test_dir / "test_*.c").each do |src_file|
+      test_name = File.basename(src_file).sub(/\..*$/, '')
+      objs = native_compile(src_file)
+      binary = native_link(test_name, @native_objs + objs)
+      @tests += execute(test_name, binary)
+    end
+
+    @clean = @module_name + "_clean"
+    task @clean do
+      sh "rm -rf #{build_dir}"
     end
   end
 
-  def clean
-    run "rm -rf #{build_dir}"
+  def execute(name, binary)
+    target = name + "_run"
+    task target => binary do
+      sh binary
+    end
+    return [ target ]
   end
 
-  def run(cmd)
-    sh cmd
+  def each_file(base, *pat, &block) 
+    pat.each do |p|
+      Dir.glob(base / p, &block)
+    end
+  end
+
+  def arm_compile(src_file)
+    obj = @arm_obj_dir / File.basename(src_file) + ".o"
+    file obj => [@arm_obj_dir, src_file] do
+      sh "#{@arm_compiler} #{@arm_cflags} -I#{@include_dir} -I#{@src_dir} -c -o #{obj} #{src_file}"
+    end
+    return [ obj ]
+  end
+
+  def arm_assemble(src_file)
+    obj = @arm_obj_dir / File.basename(src_file) + ".o"
+    file obj => [@arm_obj_dir, src_file] do
+      sh "#{@arm_assembler} #{@arm_asflags} -I{@include_dir} -I#{@src_dir} -o #{obj} #{src_file}"
+    end
+    return [ obj ]
+  end
+
+  def native_compile(src_file)
+    obj = @native_obj_dir / File.basename(src_file) + ".o"
+    file obj => [@native_obj_dir, src_file] do
+      sh "#{@native_compiler} #{@native_cflags} -I#{@src_dir} -c -o #{obj} #{src_file}"
+    end
+    return [ obj ]
+  end
+
+  def native_link(test_name, obj_files)
+    test_bin = @native_bin_dir / test_name
+    file test_bin => [ @native_bin_dir ] + obj_files do
+      sh "#{@native_compiler} -o #{test_bin} #{obj_files.join(" ")}"
+    end
+    return test_bin
   end
 
 end
 
-builder = Builder.new
+class KernelBuilder < Builder
 
-builder.tasks
+  attr_accessor :arch, :elf_binary, :binary
+
+  def initialize(module_name)
+    super(module_name)
+    @binary       = @build_dir / "kernel.bin"
+    @elf_binary   = @build_dir / "kernel.elf"
+    @libs         = ""
+  end
+
+  def pi_binary
+    @build_dir / "kernel.bin.pi.ld"
+  end
+
+  def qemu_binary
+    @build_dir / "kernel.bin.qemu.ld"
+  end
+
+  def tasks
+    super()
+    for ld_file in Dir.glob(File.join(@ld_dir, "*.ld")) do
+      link_kernel(ld_file)
+    end
+  end
+
+  def link_kernel(ld_file)
+    this_elf_binary = @elf_binary + "." + File.basename(ld_file)
+    this_binary = @binary + "." + File.basename(ld_file)
+    this_binary_dump = this_binary + ".dump"
+    file this_elf_binary => [@arm_bin_dir, ld_file] + @arm_objs do
+      sh "mkdir -p #{File.dirname(elf_binary)}"
+      sh "#{@arm_linker} -T #{ld_file} #{@arm_objs.join(" ")} -o #{this_elf_binary} -L#{@lib_dir} #{@libs}"
+    end
+    file this_binary => [ this_elf_binary ] do
+      sh "mkdir -p #{File.dirname(binary)}"
+      sh "#{@arm_objcopy} #{this_elf_binary} -O binary #{this_binary}"
+    end
+    file this_binary_dump => [ this_binary ] do
+      sh "#{@arm_objdump} -d #{this_elf_binary} > #{this_binary}.dump"
+    end
+    @default << this_elf_binary << this_binary << this_binary_dump
+  end
+
+end
+
+class SerialBuilder < Builder
+
+  def initialize
+    super("serial")
+  end
+
+  def tasks
+    super
+    @binary = native_link("serial", @native_objs)
+    @default << @binary
+  end
+
+end
+
+k1 = KernelBuilder.new("helloworld")
+k2 = KernelBuilder.new("kernel")
+s = SerialBuilder.new
+device = "/dev/ttyUSB0"
+# device = "/dev/tty.SLAB_USBtoUART"
+
+builders = [k1, k2, s]
+builders.each { |x| x.tasks }
+
+task :tests => builders.map { |x| x.tests }.flatten
+
+task :default => builders.map { |x| x.default }.flatten 
+
+task :bootstrap do
+  sh "sudo adduser $USER dialout"
+  sh "sudo apt-get install gcc-4.4-arm-linux-gnueabi lrzsz"
+end
+
+task :run => :helloworld
+
+task :helloworld => [k1.binary, s.binary] do
+  sh "#{s.binary} bootload #{k1.binary} #{device}"
+end
+
+task :run_kernel => [k2.pi_binary, s.binary] do
+  sh "#{s.binary} bootload #{k2.pi_binary} #{device}"
+end
+
+task :qemu_kernel => [k2.qemu_binary, s.binary] do
+  sh "qemu-system-arm -M versatilepb -m 128M -nographic -kernel #{k2.qemu_binary} -s -S"
+end
+
+task :kernel => [k2.pi_binary, s.binary] 
+  
+task :clean do
+  sh "rm -rf build"
+end

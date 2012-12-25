@@ -1,0 +1,21 @@
+Explaination of MiniUART:
+  
+   http://www.lammertbies.nl/comm/info/serial-uart.html#IIR
+
+Arm Chip:
+
+  http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0333h/index.html
+
+Arm instruction set overview
+
+  http://simplemachines.it/doc/arm_inst.pdf
+
+Operation of push and pop
+
+  push {r0,r1}
+
+is the same as (sans number of instructions)
+
+  push {r1}
+  push {r0}
+

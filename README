@@ -1,97 +1,107 @@
-== Getting a Development Environment Running on Debian/Ubuntu
+= Adventures in Bare Metal Programming on the Raspberry Pi
 
-Resources:
-  (QEMU, Compiler, Linux): http://raspi.springnote.com/pages/8234984
-  (LambdaPi): https://gitorious.org/lambdapi
-  (eLinux Wiki): http://elinux.org/RaspberryPiBoard
+== Introduction
 
-=== Setup Development Directory ===
+This code is is an example of working in bare metal on the Raspberry Pi.
 
-  DEV_DIR=$HOME/raspberry-pi
-  export PATH=$DEV_DIR/bin:$DEV_DIR/arm-2011.03/bin:$PATH
+== Requirements
 
-=== Installing Compiler ===
+1. Linux desktop (my instructions are Debian based)
+2. Raspberry Pi
+3. A 3.3v USB UART that supports linux, e.g. 
+   http://www.amazon.com/gp/product/B006JKNWLE
 
-  mkdir -p $DEV_DIR
-  cd $DEV_DIR
-  mkdir -p $DEV_DIR/modules
-  wget 'https://sourcery.mentor.com/sgpp/lite/arm/portal/package8734/public/arm-  none-eabi/arm-2011.03-42-arm-none-eabi-i686-pc-linux-gnu.tar.bz2'
-  tar -xvf arm-*-arm-none-eabi-i686-pc-linux-gnu.tar.bz2
+== Instructions
 
-=== Install QEMU ===
+=== The bootloader
 
-  export PATH=$DEV_DIR/bin:$DEV_DIR/arm-2011.03/bin:$PATH
-  cd $DEV_DIR
-  sudo apt-get install -y git-core zlib1g-dev libsdl1.2-dev
-  git clone git clone https://github.com/qemu/QEMU.git qemu
-  cd $DEV_DIR/qemu
-  ./configure --target-list="arm-softmmu" --prefix=$DEV_DIR --enable-sdl
-  make -j 4
-  fakeroot make install
+First you need to install bootloader05 from
+https://github.com/dwelch67/raspberrypi on your pi. Copy kernel.img
+and make an empty config.txt file on your SD card. I presume you
+already have one with the other stuff used by the pi to boot, e.g. I
+had a berriboot SD card.
 
-=== Checkout and Build LambdaPi ===
+=== Bootstrap your Linux desktop for development
 
-  cd $DEV_DIR/
-  git clone git://gitorious.org/lambdapi/lambdapi.git LambdaPi
-  cd LambdaPi
-  sed -i -e 's|/usr/local/lib/gcc/$(ARCH)/$(GCCVERSION)/|'"$DEV_DIR/arm-2011.03/lib/gcc/arm-none-eabi/4.5.2/"'|'
-  make
+First add the following to /etc/apt/sources.list
 
-=== Run Lambda Pi ===
+  deb http://www.emdebian.org/debian/ squeeze main
 
-  qemu-system-arm -M versatilepb -cpu arm1136-r2 -m 128 -device sp804 -device pl011 -kernel ./bin/kernel.elf -nographic
+Then execute
 
-How to actually do something with LambdaPi I haven't worked out yet.
+  sudo apt-get update
 
-=== Source in this Package ===
+Next execute 
 
-The source in this package is a copy of LambdaPi. I translated the
-Makefile into a Rakefile. The purpose is to try to understand what is in LambdaPi
-and have some code I can prod and poke at.
+  sudo apt-get install rake
+  rake bootstrap
 
-=== Notes ===
+This will install the GNU ARM C compiler.
 
-Execution being at the top of the vector table, vector_table.s. This
-loads the reset function pointer into the program count (a way to jump
-I guess) and proceeds to reset.s.
+=== Connect up your Serial UART
 
-Reset.s essentially sets up a number of stacks. The jumps into the c
-entry point.
+See this diagram https://sites.google.com/site/burngatehouse/home/drawings/GPIOs2.gif
 
-I guess that B . is a no-op operation. B means branch.
+I position the board so that the HDMI cable is on the left the serial
+cables and Ethernet cable are on the bottom. When position so the set
+of p1 connectors is on the top right of the board. It is labled on the
+board p1 just to the top left of the connector. The UART lines 3
+(GND), 4 (TX), 5 (RX) counting down from the top the right column from
+starting with the first pin being pin 1. The pins on my serial UART
+are also labled. Connect TX to RX and RX to TX and GND to GND. My
+serial UART came with female to female connectors and so it was easy.
 
-pl011.c provides code to access the UART. 
+=== Build the bare metal program and load it
 
-  http://infocenter.arm.com/help/topic/com.arm.doc.ddi0183f/DDI0183.pdf
+1. Execute 
 
-DMB tells the compiler not to re-order reads. It is used while reading from
-the serial port.
+  rake run
 
-  http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0489c/CIHGHHIE.html
+2. Apply power to your Raspberry pi. You should see a pattern on the
+HDMI screen and some output from the serial program running from the
+previous command.
 
-Here is a list of the ARM instruction set. 
+You should see output like this:
 
-  http://infocenter.arm.com/help/topic/com.arm.doc.qrc0001m/QRC0001_UAL.pdf
+  Sending /home/richcole/clients/github/RaspberryPi/build/kernel/kernel.bin, 3 blocks: Give your local XMODEM receive command now.
+  Xmodem sectors/kbytes sent:   
+  [snip]
+  00000014 
+  00000015 
+  00000016 
+  Bytes Sent:    512   BPS:125                             
 
-The function pl011_putc busy waits. That could be useful as a
-debugging technique but I guess is bad form for an operating system.
+  Transfer complete
+  PIPE Signal 13
+  Process terminated 0000017 
+  00000018 
+  00000019 
+  0000001A 
+  0000001B 
+  0000001C 
+  0000001D 
+  11111111 
+  22222222 
+  333!
 
-The location of the UART registers is hard coded in platorm.h. It is different on the
-Raspberry PI than on the qemu version.
+=== You're done
 
-The pl011 responds has an interupt which is configured when the device
-is initialized.
+This is as far as I got so far. The lack of a power reset switch is
+going to be painful as one has to unplug the power and plug it back in
+again to reset the device. I'm hesitant to open up the the power cord
+to install a switch. Instead I might find a power socket with a
+switch, they don't seem to have power socket switches here in the US
+like they do in Australia.
 
-The ARM and particularly the pl011 seem to have DMA's. It would seem that maybe
-by configuring a DMA the CPU could be freed from having to do the puts for each
-character as soon as the UART buffer becomes free.
+David Welch recommends the purchase of jtag adapter. 
+  http://www.raspberrypi.org/phpBB3/viewtopic.php?f=72&t=19623 
 
-There an memory management system somewhere on this system. It must
-affect access to devices and such.
+Next steps are to make the bootloaded program do something more
+interesting and to find more specs about what is where.
 
-Here is a link to a set of slides about ARM
+This document has some info:
 
-  http://simplemachines.it/doc/arm_inst.pdf
+  BCM2835-ARM-Peripherals.pdf
 
 Here is a link to a nice blog about writing a OS for beagle boards
 
@@ -100,4 +110,3 @@ Here is a link to a nice blog about writing a OS for beagle boards
 
 
 
-  
