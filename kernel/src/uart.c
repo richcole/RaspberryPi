@@ -70,7 +70,7 @@ uint32 print_hex(uint32 p) {
   return p;
 }
 
-void volatile* print_ptr(void volatile* p) {
+void volatile* print_ptr(void *p) {
   int i;
   uint32 c;
   int len = sizeof(p) * 2;
@@ -87,17 +87,5 @@ void volatile* print_ptr(void volatile* p) {
     }
   };
   return p;
-}
-
-void print_addresses_neq(void *p, void volatile *q, char *name) {
-  print_ptr(p);
-  print_ch(' ');
-  print_ptr(q);
-  print_ch(' ');
-  print_buf(name);
-  if ( p != q ) {
-    print_buf(" NOT EQUAL");
-  }
-  print_buf("\n");
 }
 

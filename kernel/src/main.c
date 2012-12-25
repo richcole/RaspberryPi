@@ -8,10 +8,23 @@
 #include "channel.h"
 #include "font.h"
 #include "timer.h"
+#include "channel.h"
+#include "msg.h"
+
+struct channel_t ch;
+struct msg_t msg1;
+struct msg_t msg2;
 
 void task2() {
   while(1) {
     print_buf("Task 2\n");
+    channel_send(&ch, &msg2);
+  }
+}
+
+void idle() {
+  print_buf("Idle task started\n");
+  while(1) {
     task_yield();
   }
 }
@@ -23,22 +36,23 @@ int notmain ( void )
 
   print_buf("\n Initializing.\n");
 
-  malloc_init((void *)0x30000);
+  malloc_init((void *)0x50000);
   framebuf_init();
   task_init();
   timer_init();
-  enable_irq();
 
   print_buf("\n Initialization complete.\n");
   draw_char('A', 0, 0, 0xffffffff);
 
-  task_start(&task2);
-
-  task_yield();
-  print_buf("BBBB 1\n");
-  task_yield();
-  print_buf("AAAA 1\n");
-
-  while(1);
+  channel_init(&ch);
+  msg_init(&msg1, 1, 1);
+  msg_init(&msg2, 1, 1);
+  task_print(task_start(&idle));
+  task_print(task_start(&task2));
+  
+  while(1) {
+    print_buf("Task 1\n");
+    channel_recv(&ch, &msg1);
+  }
   return 0;
 }

@@ -1,4 +1,5 @@
 #include "malloc.h"
+#include "uart.h"
 
 struct malloc_entry_t {
   uint32 size;
@@ -91,9 +92,14 @@ void malloc_free_list_remove(uint32 curr) {
 }
 
 char *malloc_alloc_new_entry(uint32 size) {
+  print_buf("malloc head=");
+  print_ptr(malloc_head);
   struct malloc_entry_t *entry = (struct malloc_entry_t *)malloc_head;
   malloc_head += size + sizeof(struct malloc_entry_t);
   entry->size = size;
+  print_buf(" ptr=");
+  print_ptr(entry->data);
+  print_buf("\n");
   return entry->data;
 }
 

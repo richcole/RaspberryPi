@@ -16,7 +16,7 @@ typedef struct list_node_t {
   char *data;
 } list_node_t;
 
-void list_new(struct list_t *lst);
+void list_init(struct list_t *lst);
 void list_add_first(struct list_t *lst, void *elem);
 void list_add_last(struct list_t *lst, void *elem);
 void list_remove(struct list_t *lst, struct list_node_t *node);

@@ -37,7 +37,7 @@ class Builder
     @build_dir      = @build_dir / @module_name
     @proj_dir       = @proj_dir  / @module_name
     @src_dir        = @proj_dir  / "src"
-    @ld_dir        = @proj_dir   / "linker"
+    @ld_dir         = @proj_dir  / "linker"
     @test_dir       = @proj_dir  / "test"
 
     @include_dir    = @proj_dir  / "include"
@@ -230,15 +230,15 @@ task :helloworld => [k1.binary, s.binary] do
   sh "#{s.binary} bootload #{k1.binary} #{device}"
 end
 
-task :run_kernel => [k2.binary, s.binary] do
+task :run_kernel => [k2.pi_binary, s.binary] do
   sh "#{s.binary} bootload #{k2.pi_binary} #{device}"
 end
 
-task :qemu_kernel => [k2.binary, s.binary] do
+task :qemu_kernel => [k2.qemu_binary, s.binary] do
   sh "qemu-system-arm -M versatilepb -m 128M -nographic -kernel #{k2.qemu_binary} -s -S"
 end
 
-task :kernel => [k2.binary, s.binary] 
+task :kernel => [k2.pi_binary, s.binary] 
   
 task :clean do
   sh "rm -rf build"

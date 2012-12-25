@@ -2,7 +2,7 @@
 #include "malloc.h"
 #include "uart.h"
 
-void list_new(struct list_t *lst) {
+void list_init(struct list_t *lst) {
   lst->head = 0;
 }
 

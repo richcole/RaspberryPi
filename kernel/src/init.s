@@ -96,10 +96,10 @@ FUNC sp
 FUNC task_create
     push {r2,r3}
     ldr  r2, [r0]
-    stmfd r2!, {r0-r1}
+    stmfd r2!, {r1}
+    stmfd r2!, {r1}
     stmfd r2!, {r2-r12}
-    stmfd r2!, {r1}
-    stmfd r2!, {r1}
+    stmfd r2!, {r0-r1}
     mrs   r3,cpsr
     stmfd r2!, {r3}
     str r2, [r0]

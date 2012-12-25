@@ -26,8 +26,7 @@ void uart_init();
 void print_buf(char *buf);
 void print_ch(char ch);
 uint32 print_hex(uint32 p);
-void volatile* print_ptr(void volatile* p);
-void print_addresses_neq(void *p, void volatile *q, char *name);
+void volatile* print_ptr(void *p);
 
 extern uint32 uart_intr;
 

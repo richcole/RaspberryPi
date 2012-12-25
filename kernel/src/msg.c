@@ -1,7 +1,7 @@
 #include "msg.h"
 #include "malloc.h"
 
-void msg_new(struct msg_t *buf, uint32 size, uint32 type) {
+void msg_init(struct msg_t *buf, uint32 size, uint32 type) {
   buf->data = malloc_alloc(size);
   buf->size = size;
   buf->type = type;
