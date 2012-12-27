@@ -13,8 +13,8 @@ struct irq_t {
   uint32 disable_basic;
 } irq_t;
 
-extern void enable_irq();
-extern void disable_irq();
+void enable_irq();
+void disable_irq();
 extern struct irq_t volatile *irq;
 
 #endif

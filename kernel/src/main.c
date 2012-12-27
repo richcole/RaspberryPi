@@ -47,8 +47,9 @@ int notmain ( void )
   channel_init(&ch);
   msg_init(&msg1, 1, 1);
   msg_init(&msg2, 1, 1);
-  task_print(task_start(&idle));
-  task_print(task_start(&task2));
+
+  task_start(&idle);
+  task_start(&task2); 
   
   while(1) {
     print_buf("Task 1\n");

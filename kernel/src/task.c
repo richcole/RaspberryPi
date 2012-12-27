@@ -28,22 +28,10 @@ void task_init() {
 
 struct task_t *task_start(task_func_t *task_func) {
   struct task_t *task = (struct task_t *)malloc_alloc(sizeof(struct task_t));
-  print_buf("task start task=");
-  print_ptr(task);
-
   char *p = malloc_alloc(2048);
-  p += 2040;
+  p += 2048;
   task->sp = (uint32 *)(p); // 2k stack
-  /* task->msg = 0; */
-  print_buf(" &sp=");
-  print_ptr(&task->sp);
-  print_buf(" sp=");
-  print_ptr(task->sp);
-  print_buf(" func=");
-  print_ptr(task_func);
-  print_buf(" msg=");
-  print_ptr(task->msg);
-  print_buf("\n");
+  task->msg = 0; 
   task_create(&task->sp, task_func);
   list_add_last(active_tasks, task);
   return task;
@@ -70,10 +58,6 @@ void task_yield() {
   };
 
   current_task_it = next_task_it;
-  print_buf("task_yield next_task->sp[15]=");
-  print_hex(next_task->sp[15]);
-  print_buf("\n");
-
   task_switch(&current_task->sp, next_task->sp);
 }
 
@@ -91,23 +75,7 @@ void task_yield_and_move_to(struct list_t *dst_lst) {
   list_move_to_end(active_tasks, dst_lst, current_task_it);
   current_task_it = next_task_it;
 
-  print_buf("task_yield_and_move_to next_task->sp[15]=");
-  print_hex(next_task->sp[15]);
-  print_buf("\n");
-
   task_switch(&current_task->sp, next_task->sp);
-}
-
-void task_print(struct task_t *task) {
-  print_buf("task sp=");
-  print_ptr(task->sp);
-  print_buf(" msg=");
-  print_ptr(task->msg);
-  print_buf(" task pc=");
-  print_hex(task->sp[15]);
-  print_buf(" task lr=");
-  print_hex(task->sp[14]);
-  print_buf("\n");
 }
 
 void task_yield_from_irq(uint32 *sp) {
@@ -117,16 +85,6 @@ void task_yield_from_irq(uint32 *sp) {
 
   current_task->sp = sp;
   current_task_it = next_task_it;
-
-  print_buf("task_yield_from_irq sp=");
-  print_ptr(sp);
-  print_buf(" sp[15]=");
-  print_hex(sp[15]);
-  print_buf(" sp[19]=");
-  print_hex(sp[19]);
-  print_buf(" next_task->sp[15]=");
-  print_hex(next_task->sp[15]);
-  print_buf("\n");
 
   task_switch_no_save(next_task->sp);
 }

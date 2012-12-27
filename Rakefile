@@ -9,14 +9,15 @@ class Builder
 
   attr_accessor :build, :tests, :clean, :binary, :default
 
-  def initialize(module_name)
+  def initialize(module_name, arch)
     @proj_dir  = FileUtils.pwd
     @build_dir = @proj_dir / "build"
 
     @arm_asflags   = "--warn --fatal-warnings -mcpu=arm1176jzf-s -march=armv6"
-    @arm_cflags    = "-O2 -Wall -nostdlib -nostartfiles -ffreestanding"
+    @arm_cflags    = "-O2 -ggdb -Wall -nostdlib -nostartfiles -ffreestanding"
     @arm_ldflags   = "-Wall -m32"
 
+    @arch           = arch
     @arm_arch       = "arm-linux-gnueabi"
     # @arm_arch     = "arm-none-eabi"
     @arm_objdump    = @arm_arch + "-objdump"
@@ -68,13 +69,17 @@ class Builder
 
     @default = []
     @arm_objs = []
-    Dir.glob(@src_dir / "*.s").each do |src_file| 
-      @arm_objs += arm_assemble(src_file)
-    end
-    each_file(@src_dir, "*.cpp", "*.c") do |src_file|
-      @arm_objs += arm_compile(src_file)
-    end
 
+    for src_dir in [@src_dir, @src_dir + "-" + @arch] do
+      Dir.glob(src_dir / "*.s").each do |src_file| 
+        @arm_objs += arm_assemble(src_file)
+      end
+      each_file(src_dir, "*.c") do |src_file|
+        @arm_objs += arm_compile(src_file)
+      end
+    end
+      
+    
     @native_objs = []
     each_file(@src_dir, "*.c") do |src_file|
       @native_objs += native_compile(src_file)
@@ -113,7 +118,8 @@ class Builder
   end
 
   def arm_compile(src_file)
-    obj = @arm_obj_dir / File.basename(src_file) + ".o"
+    obj_name = src_file.split("/")[-2..-1].join("-")
+    obj = @arm_obj_dir / obj_name + ".o"
     file obj => [@arm_obj_dir, src_file] do
       sh "#{@arm_compiler} #{@arm_cflags} -I#{@include_dir} -I#{@src_dir} -c -o #{obj} #{src_file}"
     end
@@ -121,7 +127,8 @@ class Builder
   end
 
   def arm_assemble(src_file)
-    obj = @arm_obj_dir / File.basename(src_file) + ".o"
+    obj_name = src_file.split("/")[-2..-1].join("-")
+    obj = @arm_obj_dir / obj_name + ".o"
     file obj => [@arm_obj_dir, src_file] do
       sh "#{@arm_assembler} #{@arm_asflags} -I{@include_dir} -I#{@src_dir} -o #{obj} #{src_file}"
     end
@@ -150,19 +157,15 @@ class KernelBuilder < Builder
 
   attr_accessor :arch, :elf_binary, :binary
 
-  def initialize(module_name)
-    super(module_name)
+  def initialize(module_name, arch)
+    super(module_name, arch)
     @binary       = @build_dir / "kernel.bin"
     @elf_binary   = @build_dir / "kernel.elf"
     @libs         = ""
   end
 
-  def pi_binary
-    @build_dir / "kernel.bin.pi.ld"
-  end
-
-  def qemu_binary
-    @build_dir / "kernel.bin.qemu.ld"
+  def binary
+    @build_dir / "kernel.bin.#{arch}.ld"
   end
 
   def tasks
@@ -195,7 +198,7 @@ end
 class SerialBuilder < Builder
 
   def initialize
-    super("serial")
+    super("serial", "native")
   end
 
   def tasks
@@ -206,13 +209,15 @@ class SerialBuilder < Builder
 
 end
 
-k1 = KernelBuilder.new("helloworld")
-k2 = KernelBuilder.new("kernel")
+k1 = KernelBuilder.new("helloworld", "pi")
+k2 = KernelBuilder.new("kernel", "pi")
+k3 = KernelBuilder.new("kernel", "qemu")
+
 s = SerialBuilder.new
 device = "/dev/ttyUSB0"
 # device = "/dev/tty.SLAB_USBtoUART"
 
-builders = [k1, k2, s]
+builders = [k1, k2, k3, s]
 builders.each { |x| x.tasks }
 
 task :tests => builders.map { |x| x.tests }.flatten
@@ -221,7 +226,7 @@ task :default => builders.map { |x| x.default }.flatten
 
 task :bootstrap do
   sh "sudo adduser $USER dialout"
-  sh "sudo apt-get install gcc-4.4-arm-linux-gnueabi lrzsz"
+  sh "sudo apt-get install gcc-4.4-arm-linux-gnueabi lrzsz gdb-arm-linux-gnueabi"
 end
 
 task :run => :helloworld
@@ -230,15 +235,16 @@ task :helloworld => [k1.binary, s.binary] do
   sh "#{s.binary} bootload #{k1.binary} #{device}"
 end
 
-task :run_kernel => [k2.pi_binary, s.binary] do
-  sh "#{s.binary} bootload #{k2.pi_binary} #{device}"
+task :run_kernel => [k2.binary, s.binary] do
+  sh "#{s.binary} bootload #{k2.binary} #{device}"
 end
 
-task :qemu_kernel => [k2.qemu_binary, s.binary] do
-  sh "qemu-system-arm -M versatilepb -m 128M -nographic -kernel #{k2.qemu_binary} -s -S"
+task :run_qemu_kernel => [k3.binary] do
+  sh "qemu-system-arm -M versatilepb -m 128M -nographic -kernel #{k3.binary} -s -S"
 end
 
-task :kernel => [k2.pi_binary, s.binary] 
+task :kernel => [k2.binary, s.binary] 
+task :qemu_kernel => [k3.binary] 
   
 task :clean do
   sh "rm -rf build"

@@ -107,6 +107,9 @@ Here is a link to a nice blog about writing a OS for beagle boards
 
   http://www.embedded-bits.co.uk/category/beagleboard/
 
+=== QEMU ===
 
-
+  arm-linux-gnueabi-gdb --annotate=3 
+  file build/kernel/kernel.elf.qemu.ld
+  target remote :1234
 

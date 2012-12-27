@@ -5,8 +5,8 @@
 #include "task.h"
 
 typedef struct channel_t {
-  struct list_t *input_tasks;
-  struct list_t *output_tasks;
+  struct list_t input_tasks;
+  struct list_t output_tasks;
 } channel_t;
 
 void channel_send(struct channel_t *ch, struct msg_t *msg);
