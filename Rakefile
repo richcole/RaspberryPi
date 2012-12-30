@@ -159,25 +159,24 @@ class KernelBuilder < Builder
 
   def initialize(module_name, arch)
     super(module_name, arch)
-    @binary       = @build_dir / "kernel.bin"
-    @elf_binary   = @build_dir / "kernel.elf"
+    @binary       = @build_dir / "kernel." + arch + ".bin"
+    @elf_binary   = @build_dir / "kernel." + arch + ".elf"
     @libs         = ""
   end
 
   def binary
-    @build_dir / "kernel.bin.#{arch}.ld"
+    @binary
   end
 
   def tasks
     super()
-    for ld_file in Dir.glob(File.join(@ld_dir, "*.ld")) do
-      link_kernel(ld_file)
-    end
+    ld_file = File.join(@ld_dir, @arch + ".ld")
+    link_kernel(ld_file)
   end
 
   def link_kernel(ld_file)
-    this_elf_binary = @elf_binary + "." + File.basename(ld_file)
-    this_binary = @binary + "." + File.basename(ld_file)
+    this_elf_binary = @elf_binary 
+    this_binary = @binary
     this_binary_dump = this_binary + ".dump"
     file this_elf_binary => [@arm_bin_dir, ld_file] + @arm_objs do
       sh "mkdir -p #{File.dirname(elf_binary)}"
@@ -245,7 +244,7 @@ end
 
 task :kernel => [k2.binary, s.binary] 
 task :qemu_kernel => [k3.binary] 
-  
+
 task :clean do
   sh "rm -rf build"
 end
