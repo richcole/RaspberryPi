@@ -1,3 +1,33 @@
+
+== Development state
+
+Currently the code at some point just gets stuck. It isn't clear why
+it gets stuck.
+
+== Channels
+
+The implementation for channels is following Go and transputers. These
+look perhaps a little like channels from CSP but they're
+different. Channels in CSP allow more than two processes to
+participate in a channel and when they do the channel event is shared
+between all the channels. Processes are wired up to events on channels
+and so they prevent events from occuring by inaction. In the current
+implementation two processes can listen or post to a channel but there
+is no co-ordination between multiple readers or between multiple
+writers. With multiple readers one reader will get the output message
+and the others will remain waiting. It is non-deterministic which will
+get the message.
+
+There is a function from channels to a list of readers and from a
+process to a list of channels. This needs to be added to the current
+code.
+
+The current implementation is not multi-core safe. It obtains a
+critical section by diabling interrupts. It can rather use a spin lock
+to be multi-core safe.
+
+== Links
+
 Explaination of MiniUART:
   
    http://www.lammertbies.nl/comm/info/serial-uart.html#IIR

@@ -161,11 +161,16 @@ class KernelBuilder < Builder
     super(module_name, arch)
     @binary       = @build_dir / "kernel." + arch + ".bin"
     @elf_binary   = @build_dir / "kernel." + arch + ".elf"
+    @binary_dump  = @build_dir / "kernel." + arch + ".dump"
     @libs         = ""
   end
 
   def binary
     @binary
+  end
+
+  def binary_dump
+    @binary_dump
   end
 
   def tasks
@@ -177,7 +182,7 @@ class KernelBuilder < Builder
   def link_kernel(ld_file)
     this_elf_binary = @elf_binary 
     this_binary = @binary
-    this_binary_dump = this_binary + ".dump"
+    this_binary_dump = @binary_dump
     file this_elf_binary => [@arm_bin_dir, ld_file] + @arm_objs do
       sh "mkdir -p #{File.dirname(elf_binary)}"
       sh "#{@arm_linker} -T #{ld_file} #{@arm_objs.join(" ")} -o #{this_elf_binary} -L#{@lib_dir} #{@libs}"
@@ -187,7 +192,7 @@ class KernelBuilder < Builder
       sh "#{@arm_objcopy} #{this_elf_binary} -O binary #{this_binary}"
     end
     file this_binary_dump => [ this_binary ] do
-      sh "#{@arm_objdump} -d #{this_elf_binary} > #{this_binary}.dump"
+      sh "#{@arm_objdump} -d #{this_elf_binary} > #{this_binary_dump}"
     end
     @default << this_elf_binary << this_binary << this_binary_dump
   end
@@ -234,16 +239,16 @@ task :helloworld => [k1.binary, s.binary] do
   sh "#{s.binary} bootload #{k1.binary} #{device}"
 end
 
-task :run_kernel => [k2.binary, s.binary] do
+task :run_kernel => [k2.binary, k2.binary_dump, s.binary] do
   sh "#{s.binary} bootload #{k2.binary} #{device}"
 end
 
-task :run_qemu_kernel => [k3.binary] do
+task :run_qemu_kernel => [k3.binary, k3.binary_dump] do
   sh "qemu-system-arm -M versatilepb -m 128M -nographic -kernel #{k3.binary} -s -S"
 end
 
-task :kernel => [k2.binary, s.binary] 
-task :qemu_kernel => [k3.binary] 
+task :kernel => [k2.binary, k2.binary_dump, s.binary] 
+task :qemu_kernel => [k3.binary, k3.binary_dump] 
 
 task :clean do
   sh "rm -rf build"

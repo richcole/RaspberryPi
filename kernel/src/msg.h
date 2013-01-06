@@ -4,9 +4,9 @@
 #include "types.h"
 
 typedef struct msg_t {
-  uint32 size;
   uint32 type;
-  char   *data;
+  uint32 size;
+  char   data[0];
 } msg_t;
 
 void msg_init(struct msg_t *buf, uint32 type, uint32 size);

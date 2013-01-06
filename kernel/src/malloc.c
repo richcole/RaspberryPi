@@ -127,3 +127,20 @@ char* malloc_alloc(uint32 size) {
 uint32 malloc_freelist_length() {
   return malloc_free_list->tail;
 }
+
+void memcpy(void *src, void *dst, uint32 len) {
+  uint32 ilen = len / 4;
+  uint32 clen = len % 4;
+  uint32 *isrc = (uint32 *)src;
+  uint32 *idst = (uint32 *)dst;
+  uint8  *csrc = (uint8 *)src;
+  uint8  *cdst = (uint8 *)src;
+  uint32 i;
+  for(i=0; i<ilen; ++i) {
+    idst[i] = isrc[i];
+  }
+  for(i=1; i<=clen; ++i) {
+    cdst[len-i] = csrc[len-i];
+  }
+}
+
