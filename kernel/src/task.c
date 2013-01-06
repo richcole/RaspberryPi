@@ -20,7 +20,7 @@ void task_init() {
 
   struct task_t *task = (struct task_t *)malloc_alloc(sizeof(struct task_t));
   task->sp    = 0;
-  task->msg   = 0;
+  msg_init(&task->msg, 0, 0);
 
   list_add_first(active_tasks, task);
   current_task_it = list_first(active_tasks);
@@ -28,12 +28,18 @@ void task_init() {
 
 struct task_t *task_start(task_func_t *task_func) {
   struct task_t *task = (struct task_t *)malloc_alloc(sizeof(struct task_t));
-  char *p = malloc_alloc(2048);
-  p += 2048;
+  char *p = malloc_alloc(0x800);
+  p += 0x800;
   task->sp = (uint32 *)(p); // 2k stack
-  task->msg = 0; 
+  msg_init(&task->msg, 0, 0);
   task_create(&task->sp, task_func);
   list_add_last(active_tasks, task);
+  print_buf("Task create:");
+  print_buf(" t=");
+  print_ptr(task);
+  print_buf(" t->sp=");
+  print_ptr(task->sp);
+  print_buf("\n");
   return task;
 }
 
@@ -75,6 +81,16 @@ void task_yield_and_move_to(struct list_t *dst_lst) {
   list_move_to_end(active_tasks, dst_lst, current_task_it);
   current_task_it = next_task_it;
 
+  print_buf("Task switch:");
+  print_buf(" c=");
+  print_ptr(current_task);
+  print_buf(" c->sp=");
+  print_ptr(current_task->sp);
+  print_buf(" n=");
+  print_ptr(next_task);
+  print_buf(" n->sp=");
+  print_ptr(next_task->sp);
+  print_buf("\n");
   task_switch(&current_task->sp, next_task->sp);
 }
 

@@ -99,18 +99,29 @@ char *malloc_alloc_new_entry(uint32 size) {
 }
 
 char* malloc_alloc(uint32 size) {
+  // make all sizes 4 byte aligned
+  if ( size & 0x3 ) {
+    size = size - (size & 0x3) + 4;
+  }
   uint32 curr = 0;
   uint32 tail = malloc_free_list->tail;
+  char *ptr = 0;
   while( curr < tail && malloc_free_list->entries[curr]->size < size ) {
     curr = (curr*2)+1;
   }
   if ( curr < tail ) {
     malloc_free_list_remove(curr);
-    return malloc_free_list->entries[malloc_free_list->tail]->data;
+    ptr = malloc_free_list->entries[malloc_free_list->tail]->data;
   }
   else {
-    return malloc_alloc_new_entry(size);
+    ptr = malloc_alloc_new_entry(size);
   }
+  print_buf("alloc: size=");
+  print_hex(size);
+  print_buf(" ptr=");
+  print_ptr(ptr);
+  print_buf("\n");
+  return ptr;
 }
 
 uint32 malloc_freelist_length() {

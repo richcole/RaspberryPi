@@ -12,13 +12,19 @@
 #include "msg.h"
 
 struct channel_t ch;
-struct msg_t msg1;
-struct msg_t msg2;
+
+typedef struct counter_t {
+  uint32 counter;
+} counter_t;
 
 void task2() {
+  struct msg_t msg;
+  uint32 counter = 0;
   while(1) {
+    msg_init(&msg, 1, sizeof(struct counter_t));
+    cast(msg.data, struct counter_t *)->counter = ++counter;
     print_buf("Task 2\n");
-    channel_send(&ch, &msg2);
+    channel_send(&ch, &msg);
   }
 }
 
@@ -31,6 +37,8 @@ void idle() {
 
 int notmain ( void )
 {
+  struct msg_t msg;
+
   uart_init();
   print_buf("\nBare Metal Programming For The Win!!\n");
 
@@ -40,20 +48,21 @@ int notmain ( void )
   framebuf_init();
   task_init();
   timer_init();
+  channel_init(&ch);
 
   print_buf("\n Initialization complete.\n");
   draw_char('A', 0, 0, 0xffffffff);
 
-  channel_init(&ch);
-  msg_init(&msg1, 1, 1);
-  msg_init(&msg2, 1, 1);
-
   task_start(&idle);
-  task_start(&task2); 
-  
+  task_start(&task2);
+
+  print_buf("Tasks created\n");
+
   while(1) {
-    print_buf("Task 1\n");
-    channel_recv(&ch, &msg1);
+    channel_recv(&ch, &msg);
+    print_buf("Task 1 counter=");
+    print_hex(cast(msg.data, struct counter_t *)->counter);
+    print_buf("\n");
   }
   return 0;
 }

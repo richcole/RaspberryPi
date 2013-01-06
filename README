@@ -110,6 +110,6 @@ Here is a link to a nice blog about writing a OS for beagle boards
 === QEMU ===
 
   arm-linux-gnueabi-gdb --annotate=3 
-  file build/kernel/kernel.elf.qemu.ld
+  file build/kernel/kernel.qemu.elf
   target remote :1234
 

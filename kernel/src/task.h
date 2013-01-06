@@ -7,7 +7,7 @@
 
 typedef struct task_t {
   uint32* sp;
-  struct msg_t  *msg;
+  struct msg_t msg;
 } task_t;
 
 typedef void (task_func_t)();
