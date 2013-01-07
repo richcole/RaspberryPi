@@ -32,6 +32,9 @@ void malloc_init(void *ptr) {
 }
 
 void malloc_free(void *ptr) {
+  print_buf("malloc_free: ptr=");
+  print_ptr(ptr);
+  print_buf("\n");
   struct malloc_entry_t *entry = malloc_get_entry(ptr);
   uint32 curr = malloc_free_list->tail++;
   uint32 parent = curr / 2;
@@ -116,7 +119,7 @@ char* malloc_alloc(uint32 size) {
   else {
     ptr = malloc_alloc_new_entry(size);
   }
-  print_buf("alloc: size=");
+  print_buf("malloc_alloc: size=");
   print_hex(size);
   print_buf(" ptr=");
   print_ptr(ptr);

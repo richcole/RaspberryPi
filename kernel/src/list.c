@@ -94,6 +94,43 @@ void list_remove(struct list_t *lst, struct list_node_t *node) {
   malloc_free(node);
 }
 
+void list_remove_all(struct list_t *lst) {
+  if ( lst->head == 0 ) {
+    return;
+  }
+  struct list_node_t *curr = lst->head;
+  struct list_node_t *next = 0;
+  do {
+    next = curr->next;
+    malloc_free(curr);
+    curr = next;
+  }
+  while(curr != lst->head);
+  lst->head = 0;
+}
+
 uint32 list_empty(struct list_t *lst) {
   return lst->head == 0;
 };
+
+struct list_node_t *list_find(struct list_t *lst, void *elem) {
+  if ( lst->head == 0 ) {
+    return 0;
+  }
+  struct list_node_t *curr = lst->head;
+  do {
+    if ( curr->data == elem ) {
+      return curr;
+    }
+    curr = curr->next;
+  }
+  while(curr != lst->head);
+  return 0;
+}
+
+void list_remove_value(struct list_t *lst, void *elem) {
+  struct list_node_t *it = list_find(lst, elem);
+  if ( it != 0 ) {
+    list_remove(lst, it);
+  }
+}

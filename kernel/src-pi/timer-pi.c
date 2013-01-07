@@ -1,4 +1,5 @@
 #include "types.h"
+#include "irq.h"
 
 typedef struct timer_t {
   uint32 cs;
