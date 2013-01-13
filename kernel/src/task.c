@@ -120,16 +120,20 @@ void task_set_msg(struct msg_t *msg) {
 }
 
 struct task_t *task_make_inactive() {
-  list_move_to_end(active_tasks, inactive_tasks, current_task_it);
   struct task_t *current_task = (struct task_t *)(current_task_it->data);
-  current_task->state &= ~TASK_STATE_ACTIVE;
+  if ( ! (current_task->state & TASK_STATE_ACTIVE) ) {
+    list_move_to_end(active_tasks, inactive_tasks, current_task_it);
+    current_task->state &= ~TASK_STATE_ACTIVE;
+  }
   return current_task;
 }
 
 void task_make_active(struct task_t *task) {
-  struct list_node_t* task_it = list_find(inactive_tasks, task);
-  list_move_to_end(inactive_tasks, active_tasks, task_it);
-  task->state |= TASK_STATE_ACTIVE;
+  if ( task->state & TASK_STATE_ACTIVE ) {
+    struct list_node_t* task_it = list_find(inactive_tasks, task);
+    list_move_to_end(inactive_tasks, active_tasks, task_it);
+    task->state |= TASK_STATE_ACTIVE;
+  }
 }
 
 void task_add_input_channel(struct task_t *task, struct channel_t *ch) {

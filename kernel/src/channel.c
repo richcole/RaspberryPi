@@ -3,7 +3,7 @@
 #include "task.h"
 #include "malloc.h"
 #include "irq.h"
-#include "uart.h"
+#include "debug.h"
 
 void channel_activate_task(struct task_t *task);
 
@@ -13,8 +13,8 @@ void channel_transfer_to_output(
   struct task_t *current_task = task_current();
   struct list_node_t *output_task_it = list_first(&ch->output_tasks);
   struct task_t *output_task = (struct task_t *)list_get(output_task_it);
-  channel_activate_task(output_task);
   msg_move(current_task->msg, output_task->msg);
+  channel_activate_task(output_task);
 }
 
 void channel_transfer_to_input(
@@ -23,42 +23,81 @@ void channel_transfer_to_input(
   struct task_t *current_task = task_current();
   struct list_node_t *input_task_it = list_first(&ch->input_tasks);
   struct task_t *input_task = (struct task_t *)list_get(input_task_it);
-  channel_activate_task(input_task);
   msg_move(input_task->msg, current_task->msg);
+  channel_activate_task(input_task);
 }
 
-void channel_send(struct channel_t *ch, struct msg_t *msg) {
-  print_buf("channel_send: begin\n");
-  disable_irq();
-  task_set_msg(msg);
-  if ( list_empty(&ch->output_tasks) ) {
-    struct task_t *current_task = task_make_inactive();
-    list_add_last(&ch->input_tasks, current_task);
-    list_add_last(&current_task->input_channels, ch);
-    task_yield();
+void channel_close(struct channel_t *ch) {
+  debug("channel_close: begin\n");
+  if ( ! ch->closed ) {
+    disable_irq();
+
+    FOR_LIST_BEGIN(it, task, struct task_t *, &ch->input_tasks);
+    msg_close(task->msg);
+    list_remove_all(&task->output_channels);
+    task_make_active(task);
+    FOR_LIST_END();
+    list_remove_all(&ch->input_tasks);
+
+    FOR_LIST_BEGIN(it, task, struct task_t *, &ch->output_tasks);
+    msg_close(task->msg);
+    list_remove_all(&task->input_channels);
+    task_make_active(task);
+    FOR_LIST_END();
+    list_remove_all(&ch->output_tasks);
+
+    enable_irq();
   }
-  else {
-    channel_transfer_to_output(ch);
-  }
-  print_buf("channel_send: end\n");
-  enable_irq();
+  debug("channel_close: end\n");
 }
 
-void channel_recv(struct channel_t *ch, struct msg_t *msg) {
-  print_buf("channel_recv: begin\n");
-  disable_irq();
-  task_set_msg(msg);
-  if ( list_empty(&ch->input_tasks) ) {
-    struct task_t *current_task = task_make_inactive();
-    list_add_last(&ch->output_tasks, current_task);
-    list_add_last(&current_task->output_channels, ch);
-    task_yield();
+uint32 channel_send(struct channel_t *ch, struct msg_t *msg) {
+  debug("channel_send: begin\n");
+  if ( ch->closed ) {
+    debug("channel_send: end\n");
+    return 1;
   }
   else {
-    channel_transfer_to_input(ch);
+    disable_irq();
+    task_set_msg(msg);
+    if ( list_empty(&ch->output_tasks) ) {
+      struct task_t *current_task = task_make_inactive();
+      list_add_last(&ch->input_tasks, current_task);
+      list_add_last(&current_task->input_channels, ch);
+      task_yield();
+    }
+    else {
+      channel_transfer_to_output(ch);
+    }
+    debug("channel_send: end\n");
+    enable_irq();
+    return 0;
   }
-  print_buf("channel_recv: end\n");
-  enable_irq();
+}
+
+uint32 channel_recv(struct channel_t *ch, struct msg_t *msg) {
+  debug("channel_recv: begin\n");
+  if ( ch->closed ) {
+    msg_close(msg);
+    debug("channel_recv: end\n");
+    return 1;
+  }
+  else {
+    disable_irq();
+    task_set_msg(msg);
+    if ( list_empty(&ch->input_tasks) ) {
+      struct task_t *current_task = task_make_inactive();
+      list_add_last(&ch->output_tasks, current_task);
+      list_add_last(&current_task->output_channels, ch);
+      task_yield();
+    }
+    else {
+      channel_transfer_to_input(ch);
+    }
+    enable_irq();
+    debug("channel_recv: end\n");
+    return 0;
+  }
 }
 
 void channel_init(struct channel_t *ch) {
@@ -129,19 +168,15 @@ void mchannel_act(struct mchannel_t *mc) {
   task_yield();
 }
 
+
+
 void channel_activate_task(struct task_t *task) {
-  print_buf("channel_active_task:\n");
+  debug("channel_active_task:\n");
   FOR_LIST_BEGIN(it, ch, struct channel_t *, &task->input_channels);
-  print_buf("remove task from input channel: ch=");
-  print_ptr(ch);
-  print_buf("\n");
   list_remove_value(&ch->input_tasks, task);
   FOR_LIST_END();
 
   FOR_LIST_BEGIN(it, ch, struct channel_t *, &task->output_channels);
-  print_buf("remove task from output channel: ch=");
-  print_ptr(ch);
-  print_buf("\n");
   list_remove_value(&ch->output_tasks, task);
   FOR_LIST_END();
 

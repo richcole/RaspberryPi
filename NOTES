@@ -1,8 +1,8 @@
 
 == Development state
 
-Currently the code at some point just gets stuck. It isn't clear why
-it gets stuck.
+Should implement a channel close event. Should exercise the code the
+does multi-weights.
 
 == Channels
 
