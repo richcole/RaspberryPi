@@ -61,12 +61,14 @@ uint32 channel_send(struct channel_t *ch, struct msg_t *msg) {
     disable_irq();
     task_set_msg(msg);
     if ( list_empty(&ch->output_tasks) ) {
+      debug("channel_send: no output task, add to input task\n");
       struct task_t *current_task = task_make_inactive();
       list_add_last(&ch->input_tasks, current_task);
       list_add_last(&current_task->input_channels, ch);
       task_yield();
     }
     else {
+      debug("transfer to output task\n");
       channel_transfer_to_output(ch);
     }
     debug("channel_send: end\n");
@@ -86,12 +88,14 @@ uint32 channel_recv(struct channel_t *ch, struct msg_t *msg) {
     disable_irq();
     task_set_msg(msg);
     if ( list_empty(&ch->input_tasks) ) {
+      debug("empty input tasks\n");
       struct task_t *current_task = task_make_inactive();
       list_add_last(&ch->output_tasks, current_task);
       list_add_last(&current_task->output_channels, ch);
       task_yield();
     }
     else {
+      debug("transfer to input\n");
       channel_transfer_to_input(ch);
     }
     enable_irq();

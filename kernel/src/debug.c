@@ -6,7 +6,7 @@ void debug(char *s) {
 }
 
 void debug_ptr(void *p) {
-  print_buf(p);
+  print_hex(p);
 }
 
 void debug_uint32(uint32 i) {

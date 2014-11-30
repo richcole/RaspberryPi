@@ -398,6 +398,27 @@ struct context* new_context() {
   return context;
 }
 
+void terminal(int argc, char **argv) {
+  init_signal_handlers();
+  struct context* context = new_context();
+
+  if ( argc < 3 ) {
+    fprintf(stderr, "terminal <device>\n");
+    exit(-1);
+  }
+
+  char const* device_name = argv[2];
+
+  context->serial = open_serial_channel (context, device_name);
+  context->stdin  = open_console_channel(context, STDIN_FILENO, 1);
+  context->stdout = open_console_channel(context, STDOUT_FILENO, 0);
+
+  channel_add_processor(context->serial, new_copy_processor(context->stdout));
+  channel_add_processor(context->stdin,  new_copy_processor(context->serial));
+  
+  select_loop(context);
+}
+
 void bootload_kernel(int argc, char **argv) {
 
   if ( argc < 4 ) {
@@ -456,6 +477,9 @@ int main(int argc, char **argv) {
 
   if ( strcmp(argv[1], "bootload") == 0 ) {
     bootload_kernel(argc, argv);
+  }
+  if ( strcmp(argv[1], "terminal") == 0 ) {
+    terminal(argc, argv);
   }
   else {
     fprintf(stderr, "Unknown command %s\n", argv[1]);

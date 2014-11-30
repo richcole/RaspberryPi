@@ -5,7 +5,7 @@ class String
 end
 
 class Builder
-#  include Rake::DSL
+  include Rake::DSL
 
   attr_accessor :build, :tests, :clean, :binary, :default
 
@@ -18,8 +18,8 @@ class Builder
     @arm_ldflags   = "-Wall -m32"
 
     @arch           = arch
-    @arm_arch       = "arm-linux-gnueabi"
-    # @arm_arch     = "arm-none-eabi"
+    # @arm_arch       = "arm-linux-gnueabi"
+    @arm_arch       = "arm-none-eabi"
     @arm_objdump    = @arm_arch + "-objdump"
     @arm_objcopy    = @arm_arch + "-objcopy"
     @arm_compiler   = @arm_arch + "-gcc"
